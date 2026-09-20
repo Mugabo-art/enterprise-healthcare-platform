@@ -1,0 +1,7 @@
+# Activate with SPRING_PROFILES_ACTIVE=dev for verbose SQL logging during local development.
+spring:
+  jpa:
+    show-sql: true
+logging:
+  level:
+    com.healthplatform: DEBUG
