@@ -23,3 +23,8 @@ export async function refreshTokens(refreshToken) {
 export async function logout() {
   await apiClient.post('/auth/logout');
 }
+
+export async function me() {
+  const { data } = await apiClient.get('/auth/me');
+  return data; // {id, email, role}
+}

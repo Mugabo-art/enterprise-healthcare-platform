@@ -8,6 +8,7 @@ vi.mock('../../../services/authService.js', () => ({
   login: vi.fn(() => Promise.resolve({ accessToken: 'a', refreshToken: 'r', expiresIn: 900 })),
   verifyMfa: vi.fn(),
   logout: vi.fn(),
+  me: vi.fn(() => Promise.resolve({ id: 'u1', email: 'doctor@hospital.test', role: 'DOCTOR' })),
 }));
 
 function renderLogin() {

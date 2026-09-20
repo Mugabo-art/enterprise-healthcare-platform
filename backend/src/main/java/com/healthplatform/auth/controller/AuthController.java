@@ -56,4 +56,10 @@ public class AuthController {
         authService.logout(user.getId());
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get the currently authenticated user")
+    public ResponseEntity<UserResponse> me(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(UserResponse.from(user));
+    }
 }

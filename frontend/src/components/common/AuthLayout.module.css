@@ -2,13 +2,13 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--sans);
 }
 
 .brandPanel {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #0F7A38, #16A34A 55%, #22C55E);
+  background: linear-gradient(160deg, var(--green-dark), var(--green) 55%, var(--green-light));
   color: #fff;
   padding: 48px;
   display: flex;
@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   padding: 32px;
-  background: #fff;
+  background: var(--white);
 }
 
 .formCard {
@@ -113,7 +113,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: #4B5D55;
+    color: var(--ink-soft);
     text-decoration: none;
     font-weight: 700;
     font-size: 0.92rem;
