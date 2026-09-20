@@ -14,22 +14,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route
-        path="/login"
-        element={
-          <div className="app-shell">
-            <LoginPage />
-          </div>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <div className="app-shell">
-            <RegisterPage />
-          </div>
-        }
-      />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/dashboard"
         element={
