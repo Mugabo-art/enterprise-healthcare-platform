@@ -1,0 +1,18 @@
+# Used by @ActiveProfiles("test") in integration tests — in-memory H2, Flyway disabled
+# so @DataJpaTest can generate its own schema from entities.
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+app:
+  jwt:
+    secret: test-secret-key-at-least-32-bytes-long-for-hmac
+    access-token-ttl-ms: 900000
+    refresh-token-ttl-days: 7

@@ -1,0 +1,55 @@
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #FFFFFF;
+  color: #0B1210;
+}
+.app-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+.card {
+  border: 1px solid #E4EFE8;
+  border-radius: 14px;
+  padding: 2rem;
+  box-shadow: 0 20px 50px -30px rgba(11, 18, 16, 0.25);
+}
+input, select {
+  font-size: 1rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #E4EFE8;
+  font-family: inherit;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: #16A34A;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+button {
+  font-size: 1rem;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: none;
+  background: #16A34A;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+button:hover {
+  background: #0F7A38;
+}
+button:disabled {
+  background: #8A9C93;
+  cursor: not-allowed;
+}
+.field { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.field label { font-size: 0.88rem; font-weight: 600; color: #4B5D55; }
+.error { color: #B3261E; font-size: 0.9rem; background: #FDECEC; padding: 8px 12px; border-radius: 8px; }
+h2 { letter-spacing: -0.01em; }
