@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as authService from '../../services/authService.js';
+import AuthLayout from '../common/AuthLayout.jsx';
 
 const ROLES = [
   { value: 'ADMIN', label: 'Administrator' },
@@ -48,7 +49,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 420, margin: '64px auto' }}>
+    <AuthLayout>
       <h2 style={{ marginTop: 0 }}>Create your account</h2>
       <p style={{ color: '#4B5D55', marginTop: -8, fontSize: '0.92rem' }}>
         In production, staff accounts are usually created by an admin after this
@@ -104,6 +105,6 @@ export default function RegisterPage() {
       <p style={{ fontSize: '0.9rem', marginTop: 16 }}>
         Already have an account? <Link to="/login">Log in</Link>
       </p>
-    </div>
+    </AuthLayout>
   );
 }

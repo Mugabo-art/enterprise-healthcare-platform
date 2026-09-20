@@ -1,0 +1,122 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+.brandPanel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0F7A38, #16A34A 55%, #22C55E);
+  color: #fff;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
+}
+.blob1 { width: 420px; height: 420px; top: -160px; right: -140px; }
+.blob2 { width: 320px; height: 320px; bottom: -140px; left: -100px; opacity: 0.35; }
+
+.brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1.15rem;
+  width: fit-content;
+}
+.mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mark svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2; fill: none; stroke-linecap: round; }
+
+.pitch {
+  position: relative;
+  max-width: 30ch;
+}
+.pitch h1 {
+  font-size: 2.4rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 20px;
+}
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.98rem;
+}
+.points li { display: flex; align-items: center; gap: 10px; opacity: 0.95; }
+.tick {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.footNote {
+  position: relative;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.formPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #fff;
+}
+
+.formCard {
+  width: 100%;
+  max-width: 400px;
+}
+
+.backLink {
+  display: none;
+}
+
+@media (max-width: 880px) {
+  .shell { grid-template-columns: 1fr; }
+  .brandPanel { display: none; }
+  .formPanel { min-height: 100vh; }
+  .backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #4B5D55;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-bottom: 24px;
+  }
+}
