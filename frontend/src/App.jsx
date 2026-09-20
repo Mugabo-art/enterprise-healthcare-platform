@@ -3,10 +3,12 @@ import LandingPage from './components/Landing/LandingPage.jsx';
 import LoginPage from './components/Login/LoginPage.jsx';
 import RegisterPage from './components/Register/RegisterPage.jsx';
 import DashboardPage from './components/Dashboard/DashboardPage.jsx';
+import PatientDetailPage from './components/Patient/PatientDetailPage.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function ProtectedRoute({ children }) {
-  const { accessToken } = useAuth();
+  const { accessToken, loading } = useAuth();
+  if (loading) return null;
   return accessToken ? children : <Navigate to="/login" replace />;
 }
 
@@ -19,11 +21,17 @@ export default function App() {
       <Route
         path="/dashboard"
         element={
-          <div className="app-shell">
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          </div>
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/patients/:id"
+        element={
+          <ProtectedRoute>
+            <PatientDetailPage />
+          </ProtectedRoute>
         }
       />
     </Routes>
