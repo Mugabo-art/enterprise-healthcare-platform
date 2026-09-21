@@ -1,0 +1,70 @@
+.wrap {
+  position: relative;
+}
+
+.svg {
+  width: 100%;
+  height: 180px;
+  display: block;
+  touch-action: none;
+}
+
+.baseline {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.crosshair {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.endLabel {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.axisLabel {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.tooltip {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  background: var(--ink);
+  color: var(--white);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tooltip strong { font-size: 0.88rem; }
+.tooltip span { color: rgba(255, 255, 255, 0.7); font-size: 0.7rem; }
+
+.tableToggle {
+  margin-top: 10px;
+}
+.tableToggle summary {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.tableToggle table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.82rem;
+}
+.tableToggle th, .tableToggle td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+}

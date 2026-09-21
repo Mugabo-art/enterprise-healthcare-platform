@@ -96,8 +96,9 @@ Revokes the given refresh token. **Response `204`**.
 
 | Method | Path | Role required | Description |
 |---|---|---|---|
-| GET | `/analytics/dashboard` | ADMIN | Hospital-wide KPIs |
-| GET | `/analytics/dashboard/mine` | DOCTOR | Own patient-load KPIs |
+| GET | `/analytics/dashboard` | any staff | KPI dashboard — hospital-wide for every role except DOCTOR, who gets their own patient load (FR-7.2). Response includes `selfScoped` so the client can label the view. |
+
+Response shape: `totalPatients`, `newPatientsLast30Days`, `totalVisits`, `visitsByStatus[]`, `visitsByType[]`, `visitsTrend[]` (last 14 days), `totalPrescriptions`, `prescriptionsByStatus[]`.
 
 ## Error Format
 
