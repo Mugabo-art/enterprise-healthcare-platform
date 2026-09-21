@@ -36,7 +36,8 @@ Honesty over hype — here's what actually works today:
 |---|---|
 | **Auth** (register, login, JWT + refresh tokens, role-based access) | ✅ Working end-to-end |
 | **Patient records** (search, view) | ✅ Working end-to-end (DB → API → UI) |
-| Doctor scheduling, prescriptions, lab workflow, pharmacy, billing | 🚧 Scaffolded / planned — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries |
+| **Doctor module** (schedule view, prescriptions, visit diagnosis/status) | ✅ Working end-to-end (API; no UI yet) |
+| Lab workflow, pharmacy, billing | 🚧 Scaffolded / planned — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries |
 | Observability (Prometheus + Grafana), containerized infra (Postgres, Redis, Kafka) | ✅ Running via Docker Compose |
 | Kubernetes manifests | ✅ Present in [`k8s/`](k8s/), for a real cluster deploy |
 

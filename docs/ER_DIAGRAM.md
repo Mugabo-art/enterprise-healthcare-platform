@@ -4,10 +4,12 @@
 ```mermaid
 erDiagram
     USERS ||--o{ REFRESH_TOKENS : has
-    USERS ||--o{ VISITS : "attends as doctor"
+    USERS ||--o{ VISITS : "attends as staff"
     USERS ||--o{ MEDICAL_HISTORY_ENTRIES : records
+    USERS ||--o{ PRESCRIPTIONS : prescribes
     PATIENTS ||--o{ MEDICAL_HISTORY_ENTRIES : has
     PATIENTS ||--o{ VISITS : has
+    PATIENTS ||--o{ PRESCRIPTIONS : has
     PATIENTS ||--o{ INVOICES : billed
     VISITS ||--o{ PRESCRIPTIONS : generates
     VISITS ||--o{ LAB_REQUESTS : generates
@@ -39,15 +41,19 @@ erDiagram
     VISITS {
         uuid id PK
         uuid patient_id FK
-        uuid doctor_id FK
-        timestamp scheduled_at
+        uuid attending_staff_id FK
+        timestamp visit_date
         enum status
+        varchar diagnosis_code
     }
     PRESCRIPTIONS {
         uuid id PK
+        uuid patient_id FK
         uuid visit_id FK
-        uuid medication_id FK
+        uuid prescribed_by_id FK
+        varchar medication_name
         varchar dosage
+        enum status
     }
     LAB_REQUESTS {
         uuid id PK

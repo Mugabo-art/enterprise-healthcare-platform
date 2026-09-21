@@ -1,4 +1,4 @@
-package com.healthplatform.visit.model;
+package com.healthplatform.doctor.model;
 
 import com.healthplatform.patient.model.Patient;
 import jakarta.persistence.*;
@@ -8,13 +8,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "visits")
+@Table(name = "prescriptions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Visit {
+public class Prescription {
 
     @Id
     @GeneratedValue
@@ -24,29 +24,31 @@ public class Visit {
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    @Column(nullable = false)
-    private Instant visitDate;
+    @Column(name = "visit_id", nullable = false)
+    private UUID visitId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private VisitType visitType;
+    @Column(name = "prescribed_by_id")
+    private UUID prescribedById;
+
+    @Column(name = "medication_name", nullable = false)
+    private String medicationName;
 
     @Column(nullable = false)
-    private String reason;
+    private String dosage;
+
+    @Column(nullable = false)
+    private String frequency;
+
+    @Column(name = "duration_days")
+    private Integer durationDays;
 
     @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    @Column(name = "attending_staff_id")
-    private UUID attendingStaffId;
+    private String instructions;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private VisitStatus status = VisitStatus.SCHEDULED;
-
-    @Column(name = "diagnosis_code")
-    private String diagnosisCode;
+    private PrescriptionStatus status = PrescriptionStatus.ACTIVE;
 
     @Builder.Default
     private Instant createdAt = Instant.now();

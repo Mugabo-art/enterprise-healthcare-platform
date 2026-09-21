@@ -57,9 +57,17 @@ Revokes the given refresh token. **Response `204`**.
 
 | Method | Path | Role required | Description |
 |---|---|---|---|
+| GET | `/patients/{patientId}/visits` | any staff | List a patient's visits |
 | GET | `/doctors/{id}/visits` | DOCTOR (self), ADMIN | Doctor's schedule |
-| POST | `/visits` | DOCTOR, NURSE | Create/schedule a visit |
-| PUT | `/visits/{id}` | DOCTOR | Update notes/diagnosis/status |
+| POST | `/patients/{patientId}/visits` | ADMIN, NURSE, DOCTOR | Create/record a visit |
+| PUT | `/patients/{patientId}/visits/{visitId}` | DOCTOR | Update notes/diagnosis code/status |
+
+## Prescriptions
+
+| Method | Path | Role required | Description |
+|---|---|---|---|
+| GET | `/patients/{patientId}/prescriptions` | any staff | List a patient's prescriptions |
+| POST | `/patients/{patientId}/visits/{visitId}/prescriptions` | DOCTOR | Issue a prescription linked to the visit |
 
 ## Lab
 
