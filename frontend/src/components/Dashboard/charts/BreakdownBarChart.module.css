@@ -1,0 +1,77 @@
+.chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 16px;
+  height: 180px;
+  padding-top: 24px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.barTrack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.bar {
+  width: 100%;
+  max-width: 48px;
+  border-radius: 4px 4px 0 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.bar:hover, .bar:focus-visible {
+  filter: brightness(1.08);
+  outline: none;
+}
+
+.capLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.categoryLabel {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.tableToggle {
+  margin-top: 10px;
+}
+.tableToggle summary {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.tableToggle table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.82rem;
+}
+.tableToggle th, .tableToggle td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+}
