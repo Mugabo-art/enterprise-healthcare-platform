@@ -6,7 +6,9 @@ import com.healthplatform.patient.model.Sex;
 import com.healthplatform.patient.repository.PatientRepository;
 import com.healthplatform.visit.dto.VisitCreateRequest;
 import com.healthplatform.visit.dto.VisitResponse;
+import com.healthplatform.visit.dto.VisitUpdateRequest;
 import com.healthplatform.visit.model.Visit;
+import com.healthplatform.visit.model.VisitStatus;
 import com.healthplatform.visit.model.VisitType;
 import com.healthplatform.visit.repository.VisitRepository;
 import com.healthplatform.visit.service.VisitService;
@@ -103,5 +105,57 @@ class VisitServiceTest {
 
         assertEquals(1, result.size());
         assertEquals("Fall", result.get(0).reason());
+    }
+
+    @Test
+    void update_appliesDiagnosisCodeAndStatusToVisitOwnedByPatient() {
+        UUID patientId = UUID.randomUUID();
+        UUID visitId = UUID.randomUUID();
+        Patient patient = activePatient(patientId);
+        Visit visit = Visit.builder().id(visitId).patient(patient).visitDate(Instant.now())
+                .visitType(VisitType.OUTPATIENT).reason("Checkup").build();
+        VisitUpdateRequest request = new VisitUpdateRequest("Looks stable", "J06.9", VisitStatus.COMPLETED);
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(patient));
+        when(visitRepository.findById(visitId)).thenReturn(Optional.of(visit));
+        when(visitRepository.save(any(Visit.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        VisitResponse response = visitService.update(patientId, visitId, request);
+
+        assertEquals("Looks stable", response.notes());
+        assertEquals("J06.9", response.diagnosisCode());
+        assertEquals(VisitStatus.COMPLETED, response.status());
+    }
+
+    @Test
+    void update_rejectsVisitBelongingToAnotherPatient() {
+        UUID patientId = UUID.randomUUID();
+        UUID visitId = UUID.randomUUID();
+        Patient patient = activePatient(patientId);
+        Patient otherPatient = activePatient(UUID.randomUUID());
+        Visit visit = Visit.builder().id(visitId).patient(otherPatient).visitDate(Instant.now())
+                .visitType(VisitType.OUTPATIENT).reason("Checkup").build();
+        VisitUpdateRequest request = new VisitUpdateRequest(null, "J06.9", null);
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(patient));
+        when(visitRepository.findById(visitId)).thenReturn(Optional.of(visit));
+
+        assertThrows(ApiException.class, () -> visitService.update(patientId, visitId, request));
+        verify(visitRepository, never()).save(any());
+    }
+
+    @Test
+    void findByDoctor_returnsVisitsForAttendingStaff() {
+        UUID doctorId = UUID.randomUUID();
+        Patient patient = activePatient(UUID.randomUUID());
+        Visit visit = Visit.builder().id(UUID.randomUUID()).patient(patient).visitDate(Instant.now())
+                .visitType(VisitType.OUTPATIENT).reason("Follow-up").attendingStaffId(doctorId).build();
+
+        when(visitRepository.findByAttendingStaffIdOrderByVisitDateDesc(doctorId)).thenReturn(List.of(visit));
+
+        List<VisitResponse> result = visitService.findByDoctor(doctorId);
+
+        assertEquals(1, result.size());
+        assertEquals(doctorId, result.get(0).attendingStaffId());
     }
 }

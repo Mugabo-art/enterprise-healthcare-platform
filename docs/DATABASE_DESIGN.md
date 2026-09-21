@@ -55,20 +55,27 @@
 |---|---|---|
 | id | UUID PK | |
 | patient_id | UUID FK → patients.id | indexed |
-| doctor_id | UUID FK → users.id | indexed |
-| scheduled_at | TIMESTAMP | |
-| status | ENUM | SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED |
+| attending_staff_id | UUID FK → users.id | indexed; DOCTOR or NURSE — visit creation isn't doctor-only |
+| visit_date | TIMESTAMP | |
+| visit_type | ENUM | OUTPATIENT, INPATIENT, EMERGENCY, FOLLOW_UP |
+| status | ENUM | SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED — DOCTOR-only to update |
+| reason | VARCHAR | |
 | notes | TEXT | |
-| diagnosis_code | VARCHAR NULL | e.g. ICD-10 |
+| diagnosis_code | VARCHAR NULL | e.g. ICD-10; DOCTOR-only to set |
 
 ### prescriptions
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID PK | |
+| patient_id | UUID FK → patients.id | indexed |
 | visit_id | UUID FK → visits.id | indexed |
-| medication_id | UUID FK → medications.id | |
+| prescribed_by_id | UUID FK → users.id | |
+| medication_name | VARCHAR | free-text; becomes a `medication_id` FK once the pharmacy module ships a catalog |
 | dosage | VARCHAR | |
+| frequency | VARCHAR | |
+| duration_days | INT NULL | |
 | instructions | TEXT | |
+| status | ENUM | ACTIVE, COMPLETED, CANCELLED |
 
 ### lab_requests
 | Column | Type | Notes |

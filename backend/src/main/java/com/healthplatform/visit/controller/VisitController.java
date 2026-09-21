@@ -3,6 +3,7 @@ package com.healthplatform.visit.controller;
 import com.healthplatform.auth.model.User;
 import com.healthplatform.visit.dto.VisitCreateRequest;
 import com.healthplatform.visit.dto.VisitResponse;
+import com.healthplatform.visit.dto.VisitUpdateRequest;
 import com.healthplatform.visit.service.VisitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,5 +47,16 @@ public class VisitController {
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(visitService.create(patientId, request, user.getId()));
+    }
+
+    @PutMapping("/{visitId}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    @Operation(summary = "Update a visit's notes, diagnosis code, or status")
+    public ResponseEntity<VisitResponse> update(
+            @PathVariable UUID patientId,
+            @PathVariable UUID visitId,
+            @Valid @RequestBody VisitUpdateRequest request
+    ) {
+        return ResponseEntity.ok(visitService.update(patientId, visitId, request));
     }
 }
