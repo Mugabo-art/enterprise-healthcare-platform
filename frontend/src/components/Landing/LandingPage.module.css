@@ -1,4 +1,13 @@
-/* Brand design tokens (--bg, --green, --sans, etc.) now live globally in src/index.css */
+/* Brand design tokens (--bg, --green, --sans, etc.) live globally in src/index.css.
+   The landing page overrides them to a blue palette, scoped to .shell only —
+   login/dashboard/patient pages keep the green brand untouched. */
+.shell{
+  --bg:#FFFFFF; --bg-soft:#F3F6FF;
+  --ink:#0B1220; --ink-soft:#4B5670; --muted:#8A93AC;
+  --green:#2F6FED; --green-dark:#1B4FCC; --green-light:#63A0FF;
+  --green-mist:#EAF1FF; --green-glow:rgba(47,111,237,.22);
+  --line:#E3E8F7; --white:#FFFFFF;
+}
 .shell{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 .shell *{box-sizing:border-box;}
 .shell a{color:inherit;}
@@ -80,49 +89,51 @@
 .avatarsRow p{font-size:0.88rem;color:var(--ink-soft);margin:0;}
 .avatarsRow strong{color:var(--ink);}
 
-.heroVisual{position:relative;}
-.floatCard{
-  position:absolute;background:var(--white);border:1px solid var(--line);border-radius:16px;
-  box-shadow:0 20px 50px -18px rgba(11,18,16,.18);padding:14px 16px;z-index:3;
-}
-.fc1{top:-16px;left:-30px;display:flex;align-items:center;gap:10px;animation:floaty 5s ease-in-out infinite;}
-.fc2{bottom:-14px;right:-22px;animation:floaty 6s ease-in-out infinite 0.4s;}
-@keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-@media (prefers-reduced-motion: reduce){ .floatCard{animation:none;} }
-.fcIcon{width:36px;height:36px;border-radius:10px;background:var(--green-mist);display:flex;align-items:center;justify-content:center;color:var(--green-dark);flex-shrink:0;}
-.fcT1{font-size:0.82rem;font-weight:700;color:var(--ink);}
-.fcT2{font-size:0.75rem;color:var(--muted);}
-.fc2 .fcT1{font-size:1.4rem;font-weight:800;color:var(--green-dark);}
+.heroVisual{position:relative;padding:0 34px 34px 0;}
+@media (max-width:520px){ .heroVisual{padding:0 0 40px;} }
 
-.appWindow{
-  background:var(--white);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
-  box-shadow:0 34px 76px -26px rgba(11,18,16,.22);position:relative;z-index:1;
+.heroPhotoFrame{
+  position:relative;border-radius:32px;overflow:hidden;aspect-ratio:4/4.9;
+  box-shadow:0 44px 90px -34px rgba(13,26,64,.38);
 }
-.appWindowBar{display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line);}
-.wdot{width:10px;height:10px;border-radius:50%;background:var(--line);}
-.appBody{display:grid;grid-template-columns:64px 1fr;min-height:340px;}
-.appSidebar{border-right:1px solid var(--line);padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg-soft);}
-.sideIcon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
-.sideIconActive{background:var(--green-mist);color:var(--green-dark);}
-.appMain{padding:20px;}
-.appMainHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
-.appMainHead .fcT1{font-weight:700;font-size:0.98rem;}
-.appMainHead .fcT2{font-size:0.78rem;color:var(--muted);}
-.dbPill{font-size:0.72rem;font-weight:700;background:var(--green-mist);color:var(--green-dark);padding:4px 10px;border-radius:999px;}
-.statMiniRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-.statMini{background:var(--bg-soft);border-radius:12px;padding:12px;}
-.statMini .n{font-weight:800;font-size:1.15rem;color:var(--green-dark);}
-.statMini .l{font-size:0.72rem;color:var(--muted);margin-top:2px;}
-.dbRow{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;margin-bottom:4px;}
-.dbRowActive{background:var(--green-mist);}
-.dbAvatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(150deg,var(--green-light),var(--green-dark));flex-shrink:0;}
-.dbLines{flex:1;}
-.dbLine{height:7px;border-radius:4px;background:var(--line);margin-bottom:5px;}
-.dbLineShort{width:38%;}
-.dbLineMid{width:64%;}
-.dbStatus{font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;}
-.dbStatusOk{background:var(--green-mist);color:var(--green-dark);}
-.dbStatusWait{background:var(--bg-soft);color:var(--muted);}
+.heroPhoto{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+.heroPhotoShade{
+  position:absolute;inset:0;
+  background:linear-gradient(200deg, transparent 40%, var(--green-glow) 78%, rgba(27,79,204,.4) 100%);
+  mix-blend-mode:multiply;pointer-events:none;
+}
+.heroPhotoShade::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(0deg, rgba(11,18,32,.55) 0%, transparent 30%);
+}
+
+@keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+@media (prefers-reduced-motion: reduce){ .statBadge, .heroPillBar{animation:none !important;} }
+
+.statBadge{
+  position:absolute;right:-30px;background:var(--white);border-radius:18px;padding:14px 20px;
+  box-shadow:0 22px 50px -18px rgba(13,26,64,.3);z-index:3;text-align:center;min-width:104px;
+  animation:floaty 5.5s ease-in-out infinite;
+}
+.statBadgeTop{top:36px;}
+.statBadgeBottom{top:calc(50% + 26px);animation-delay:.5s;}
+@media (max-width:520px){ .statBadge{right:8px;} }
+.statBadgeNum{font-size:1.55rem;font-weight:800;color:var(--green-dark);letter-spacing:-0.02em;line-height:1;}
+.statBadgeLabel{font-size:0.72rem;color:var(--muted);font-weight:600;margin-top:5px;line-height:1.25;}
+.statBadgeRail{
+  position:absolute;right:-2px;top:88px;bottom:calc(50% - 6px);width:1px;
+  background:repeating-linear-gradient(180deg, var(--line) 0 6px, transparent 6px 12px);z-index:2;
+}
+
+.heroPillBar{
+  position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);
+  background:var(--white);border-radius:999px;padding:8px;display:flex;gap:8px;
+  box-shadow:0 26px 60px -20px rgba(13,26,64,.4);z-index:4;
+  animation:floaty 6s ease-in-out infinite .2s;
+}
+.heroPillBar .btn{padding:12px 22px;}
+.heroPillBar .btnGhost{color:var(--ink);}
+.heroPillBar .btnGhost:hover{background:var(--bg-soft);}
 
 .trustStrip{padding:34px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
 .trustStrip p{text-align:center;font-size:0.85rem;color:var(--muted);margin:0 0 22px;font-weight:600;letter-spacing:0.01em;}
