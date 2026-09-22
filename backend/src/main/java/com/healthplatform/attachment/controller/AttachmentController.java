@@ -4,6 +4,7 @@ import com.healthplatform.attachment.dto.AttachmentResponse;
 import com.healthplatform.attachment.model.Attachment;
 import com.healthplatform.attachment.service.AttachmentService;
 import com.healthplatform.auth.model.User;
+import com.healthplatform.common.security.PatientAccessGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ContentDisposition;
@@ -25,14 +26,17 @@ import java.util.UUID;
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
+    private final PatientAccessGuard accessGuard;
 
-    public AttachmentController(AttachmentService attachmentService) {
+    public AttachmentController(AttachmentService attachmentService, PatientAccessGuard accessGuard) {
         this.attachmentService = attachmentService;
+        this.accessGuard = accessGuard;
     }
 
     @GetMapping
     @Operation(summary = "List a patient's attachments, newest first")
-    public ResponseEntity<List<AttachmentResponse>> list(@PathVariable UUID patientId) {
+    public ResponseEntity<List<AttachmentResponse>> list(@PathVariable UUID patientId, @AuthenticationPrincipal User user) {
+        accessGuard.assertAccess(user, patientId);
         return ResponseEntity.ok(attachmentService.list(patientId));
     }
 
@@ -51,7 +55,8 @@ public class AttachmentController {
 
     @GetMapping("/{attachmentId}/download")
     @Operation(summary = "Download an attachment's raw file")
-    public ResponseEntity<byte[]> download(@PathVariable UUID patientId, @PathVariable UUID attachmentId) {
+    public ResponseEntity<byte[]> download(@PathVariable UUID patientId, @PathVariable UUID attachmentId, @AuthenticationPrincipal User user) {
+        accessGuard.assertAccess(user, patientId);
         Attachment attachment = attachmentService.getForDownload(patientId, attachmentId);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(attachment.getContentType()))

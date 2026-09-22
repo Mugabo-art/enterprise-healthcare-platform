@@ -10,6 +10,7 @@ const ROLES = [
   { value: 'LAB_TECH', label: 'Lab Technician' },
   { value: 'PHARMACIST', label: 'Pharmacist' },
   { value: 'BILLING_CLERK', label: 'Billing Clerk' },
+  { value: 'PATIENT', label: 'Patient' },
 ];
 
 export default function RegisterPage() {
@@ -74,6 +75,11 @@ export default function RegisterPage() {
               <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
+          {role === 'PATIENT' && (
+            <p style={{ color: '#4B5D55', fontSize: '0.85rem', marginTop: 6, marginBottom: 0 }}>
+              A staff member will need to link this account to your patient record before your portal shows any data.
+            </p>
+          )}
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>

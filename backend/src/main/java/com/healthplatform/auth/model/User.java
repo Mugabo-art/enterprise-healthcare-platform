@@ -48,6 +48,15 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean accountLocked = false;
 
+    /**
+     * Set when a PATIENT-role account is linked to an existing Patient record
+     * (via PatientController's link-user endpoint). Null until staff link it —
+     * a self-registered patient sees no data until then. Unused by non-PATIENT
+     * roles.
+     */
+    @Column(name = "patient_id")
+    private UUID patientId;
+
     @Builder.Default
     private Instant createdAt = Instant.now();
 

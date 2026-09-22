@@ -1,5 +1,6 @@
 package com.healthplatform.patient.service;
 
+import com.healthplatform.auth.service.AuthService;
 import com.healthplatform.common.exception.ApiException;
 import com.healthplatform.patient.dto.PatientCreateRequest;
 import com.healthplatform.patient.dto.PatientResponse;
@@ -19,9 +20,11 @@ import java.util.UUID;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final AuthService authService;
 
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository, AuthService authService) {
         this.patientRepository = patientRepository;
+        this.authService = authService;
     }
 
     @Transactional
@@ -68,5 +71,13 @@ public class PatientService {
         patient.setUpdatedAt(Instant.now());
 
         return PatientResponse.from(patientRepository.save(patient));
+    }
+
+    @Transactional
+    public void linkUser(UUID patientId, UUID userId) {
+        patientRepository.findById(patientId)
+                .filter(p -> p.getDeletedAt() == null)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Patient not found"));
+        authService.linkPatient(userId, patientId);
     }
 }
