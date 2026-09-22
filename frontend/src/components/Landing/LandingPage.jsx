@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './LandingPage.module.css';
+// Photo: Eros Reyes Cabrera / Unsplash (unsplash.com/photo-1736289162890-78f1ff4f8bd3), Unsplash License.
+import heroDoctors from '../../assets/hero-doctors.jpg';
 
 // Small inline icon set (stroke-based, à la Feather icons) so we don't pull in
 // an icon library dependency just for a dozen glyphs.
@@ -20,13 +22,8 @@ const icons = {
   pill: <><rect x="3" y="8" width="18" height="8" rx="4" /><path d="M12 8v8" /></>,
   card: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></>,
   lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
-  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></>,
   chevronDown: <path d="M6 9l6 6 6-6" />,
   star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z" />,
-  grid: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
-  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
-  check2: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
-  billing: <><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>,
   building: <path d="M3 21h18M5 21V7l7-4 7 4v14M9 9v.01M15 9v.01M9 13v.01M15 13v.01M9 17v.01M15 17v.01" />,
   heart: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
   box: <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18M3 9h18" /></>,
@@ -160,56 +157,26 @@ export default function LandingPage() {
             </div>
           </div>
           <div className={styles.heroVisual}>
-            <div className={`${styles.floatCard} ${styles.fc1}`}>
-              <div className={styles.fcIcon}><Icon path={icons.bell} className={styles.iconSm} /></div>
-              <div>
-                <div className={styles.fcT1}>Lab result ready</div>
-                <div className={styles.fcT2}>Just now</div>
-              </div>
+            <div className={styles.heroPhotoFrame}>
+              <img
+                src={heroDoctors}
+                alt="Two clinicians in white coats, part of a MediCore care team"
+                className={styles.heroPhoto}
+              />
+              <div className={styles.heroPhotoShade}></div>
             </div>
-            <div className={`${styles.floatCard} ${styles.fc2}`}>
-              <div className={styles.fcT1}>98.5%</div>
-              <div className={styles.fcT2}>On-time discharge rate</div>
+            <div className={styles.statBadgeRail}></div>
+            <div className={`${styles.statBadge} ${styles.statBadgeTop}`}>
+              <div className={styles.statBadgeNum}>9</div>
+              <div className={styles.statBadgeLabel}>Connected<br />modules</div>
             </div>
-            <div className={styles.appWindow}>
-              <div className={styles.appWindowBar}><span className={styles.wdot}></span><span className={styles.wdot}></span><span className={styles.wdot}></span></div>
-              <div className={styles.appBody}>
-                <div className={styles.appSidebar}>
-                  <div className={`${styles.sideIcon} ${styles.sideIconActive}`}><Icon path={icons.grid} className={styles.iconSm} /></div>
-                  <div className={styles.sideIcon}><Icon path={icons.users} className={styles.iconSm} /></div>
-                  <div className={styles.sideIcon}><Icon path={icons.check2} className={styles.iconSm} /></div>
-                  <div className={styles.sideIcon}><Icon path={icons.billing} className={styles.iconSm} /></div>
-                </div>
-                <div className={styles.appMain}>
-                  <div className={styles.appMainHead}>
-                    <div>
-                      <div className={styles.fcT1}>Today's patients</div>
-                      <div className={styles.fcT2}>Tuesday, March 12</div>
-                    </div>
-                    <div className={styles.dbPill}>Live</div>
-                  </div>
-                  <div className={styles.statMiniRow}>
-                    <div className={styles.statMini}><div className="n" style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--green-dark)' }}>42</div><div className="l" style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 2 }}>Checked in</div></div>
-                    <div className={styles.statMini}><div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--green-dark)' }}>7</div><div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 2 }}>Waiting</div></div>
-                    <div className={styles.statMini}><div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--green-dark)' }}>3</div><div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 2 }}>Labs pending</div></div>
-                  </div>
-                  <div className={`${styles.dbRow} ${styles.dbRowActive}`}>
-                    <div className={styles.dbAvatar}></div>
-                    <div className={styles.dbLines}><div className={`${styles.dbLine} ${styles.dbLineMid}`}></div><div className={`${styles.dbLine} ${styles.dbLineShort}`}></div></div>
-                    <div className={`${styles.dbStatus} ${styles.dbStatusOk}`}>In progress</div>
-                  </div>
-                  <div className={styles.dbRow}>
-                    <div className={styles.dbAvatar}></div>
-                    <div className={styles.dbLines}><div className={`${styles.dbLine} ${styles.dbLineMid}`}></div><div className={`${styles.dbLine} ${styles.dbLineShort}`}></div></div>
-                    <div className={`${styles.dbStatus} ${styles.dbStatusWait}`}>Scheduled</div>
-                  </div>
-                  <div className={styles.dbRow}>
-                    <div className={styles.dbAvatar}></div>
-                    <div className={styles.dbLines}><div className={`${styles.dbLine} ${styles.dbLineMid}`}></div><div className={`${styles.dbLine} ${styles.dbLineShort}`}></div></div>
-                    <div className={`${styles.dbStatus} ${styles.dbStatusOk}`}>Completed</div>
-                  </div>
-                </div>
-              </div>
+            <div className={`${styles.statBadge} ${styles.statBadgeBottom}`}>
+              <div className={styles.statBadgeNum}>&lt;300ms</div>
+              <div className={styles.statBadgeLabel}>Avg. API<br />response</div>
+            </div>
+            <div className={styles.heroPillBar}>
+              <Link to="/register" className={`${styles.btn} ${styles.btnPrimary}`}>Get started free</Link>
+              <Link to="/login" className={`${styles.btn} ${styles.btnGhost}`}>Log in</Link>
             </div>
           </div>
         </div>
