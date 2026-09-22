@@ -5,8 +5,8 @@ import com.healthplatform.auth.model.User;
 
 import java.util.UUID;
 
-public record UserResponse(UUID id, String email, Role role) {
+public record UserResponse(UUID id, String email, Role role, UUID patientId) {
     public static UserResponse from(User user) {
-        return new UserResponse(user.getId(), user.getEmail(), user.getRole());
+        return new UserResponse(user.getId(), user.getEmail(), user.getRole(), user.getPatientId());
     }
 }

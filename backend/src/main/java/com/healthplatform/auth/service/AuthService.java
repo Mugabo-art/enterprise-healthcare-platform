@@ -110,6 +110,23 @@ public class AuthService {
         refreshTokenService.revokeAllForUser(userId);
     }
 
+    /**
+     * Links a PATIENT-role account to an existing Patient record. Called from
+     * PatientController (via PatientService) rather than exposed directly, so
+     * the "is this patient real" check stays in the patient module and this
+     * stays a same-request service-to-service call, not a repository reach.
+     */
+    @Transactional
+    public void linkPatient(UUID userId, UUID patientId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+        if (user.getRole() != com.healthplatform.auth.model.Role.PATIENT) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Only PATIENT-role accounts can be linked to a patient record");
+        }
+        user.setPatientId(patientId);
+        userRepository.save(user);
+    }
+
     private AuthTokensResponse issueTokens(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = refreshTokenService.issue(user);

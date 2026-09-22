@@ -39,20 +39,29 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const canManagePatients = user && CAN_MANAGE_PATIENTS.includes(user.role);
+  const isPatient = user && user.role === 'PATIENT';
 
   function loadPatients() {
+    if (isPatient) return;
     listPatients(search)
       .then((page) => setPatients(page.content ?? []))
       .catch((err) => setError(err.response?.data?.message || 'Failed to load patients'));
   }
 
-  useEffect(loadPatients, [search]);
+  useEffect(loadPatients, [search, isPatient]);
 
   useEffect(() => {
+    if (isPatient) return;
     getDashboardAnalytics()
       .then(setAnalytics)
       .catch((err) => setAnalyticsError(err.response?.data?.message || 'Failed to load dashboard analytics'));
-  }, []);
+  }, [isPatient]);
+
+  useEffect(() => {
+    if (isPatient && user.patientId) {
+      navigate(`/dashboard/patients/${user.patientId}`, { replace: true });
+    }
+  }, [isPatient, user, navigate]);
 
   async function handleLogout() {
     await logout();
@@ -96,6 +105,20 @@ export default function DashboardPage() {
       </header>
 
       <div className={styles.content}>
+        {isPatient ? (
+          <div className={styles.card}>
+            <h1>Welcome</h1>
+            {user.patientId ? (
+              <p>Loading your record…</p>
+            ) : (
+              <p>
+                Your account isn't linked to a patient record yet. A staff member needs to
+                link it before you can see your visits, history, and prescriptions here.
+              </p>
+            )}
+          </div>
+        ) : (
+        <>
         <div className={styles.headRow}>
           <h1>Overview</h1>
           {analytics && (
@@ -196,6 +219,8 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
+        </>
+        )}
       </div>
 
       {showForm && (

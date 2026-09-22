@@ -1,6 +1,7 @@
 package com.healthplatform.doctor.controller;
 
 import com.healthplatform.auth.model.User;
+import com.healthplatform.common.security.PatientAccessGuard;
 import com.healthplatform.doctor.dto.PrescriptionCreateRequest;
 import com.healthplatform.doctor.dto.PrescriptionResponse;
 import com.healthplatform.doctor.service.PrescriptionService;
@@ -21,14 +22,17 @@ import java.util.UUID;
 public class PrescriptionController {
 
     private final PrescriptionService prescriptionService;
+    private final PatientAccessGuard accessGuard;
 
-    public PrescriptionController(PrescriptionService prescriptionService) {
+    public PrescriptionController(PrescriptionService prescriptionService, PatientAccessGuard accessGuard) {
         this.prescriptionService = prescriptionService;
+        this.accessGuard = accessGuard;
     }
 
     @GetMapping("/api/patients/{patientId}/prescriptions")
     @Operation(summary = "List a patient's prescriptions, newest first")
-    public ResponseEntity<List<PrescriptionResponse>> list(@PathVariable UUID patientId) {
+    public ResponseEntity<List<PrescriptionResponse>> list(@PathVariable UUID patientId, @AuthenticationPrincipal User user) {
+        accessGuard.assertAccess(user, patientId);
         return ResponseEntity.ok(prescriptionService.list(patientId));
     }
 

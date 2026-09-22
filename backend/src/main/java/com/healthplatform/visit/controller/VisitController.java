@@ -1,6 +1,7 @@
 package com.healthplatform.visit.controller;
 
 import com.healthplatform.auth.model.User;
+import com.healthplatform.common.security.PatientAccessGuard;
 import com.healthplatform.visit.dto.VisitCreateRequest;
 import com.healthplatform.visit.dto.VisitResponse;
 import com.healthplatform.visit.dto.VisitUpdateRequest;
@@ -27,14 +28,17 @@ import java.util.UUID;
 public class VisitController {
 
     private final VisitService visitService;
+    private final PatientAccessGuard accessGuard;
 
-    public VisitController(VisitService visitService) {
+    public VisitController(VisitService visitService, PatientAccessGuard accessGuard) {
         this.visitService = visitService;
+        this.accessGuard = accessGuard;
     }
 
     @GetMapping
     @Operation(summary = "List a patient's visits, newest first")
-    public ResponseEntity<List<VisitResponse>> list(@PathVariable UUID patientId) {
+    public ResponseEntity<List<VisitResponse>> list(@PathVariable UUID patientId, @AuthenticationPrincipal User user) {
+        accessGuard.assertAccess(user, patientId);
         return ResponseEntity.ok(visitService.list(patientId));
     }
 

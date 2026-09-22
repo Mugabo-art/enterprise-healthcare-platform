@@ -15,6 +15,7 @@ export default function PatientDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const canWrite = user && CAN_WRITE_CLINICAL.includes(user.role);
+  const isPatient = user && user.role === 'PATIENT';
 
   const [patient, setPatient] = useState(null);
   const [visits, setVisits] = useState([]);
@@ -34,7 +35,7 @@ export default function PatientDetailPage() {
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <Link to="/dashboard" className={styles.backLink}>← Back to patients</Link>
+        {!isPatient && <Link to="/dashboard" className={styles.backLink}>← Back to patients</Link>}
       </header>
 
       <div className={styles.content}>
