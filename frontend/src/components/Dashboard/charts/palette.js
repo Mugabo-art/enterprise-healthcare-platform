@@ -9,9 +9,10 @@ export function categoricalColor(index) {
   return CATEGORICAL[index % CATEGORICAL.length];
 }
 
-// Brand hue (this app's own green ramp, from src/index.css) for the single-series
-// visits trend — a sequential/brand encoding, not a categorical one, so it doesn't
-// need CVD-adjacent validation.
-export const TREND_LINE = '#0F7A38';
-export const TREND_DOT = '#16A34A';
-export const TREND_FILL = 'rgba(22, 163, 74, 0.10)';
+// Brand hue for the single-series visits trend — a sequential/brand encoding,
+// not a categorical one, so it doesn't need CVD-adjacent validation. Matches
+// the dashboard shell's blue brand override (see AppShell.module.css .shell),
+// same values as LandingPage's --green/--green-dark.
+export const TREND_LINE = '#1B4FCC';
+export const TREND_DOT = '#2F6FED';
+export const TREND_FILL = 'rgba(47, 111, 237, 0.10)';

@@ -1,7 +1,7 @@
 import apiClient from './apiClient.js';
 
-export async function listPatients(search = '') {
-  const { data } = await apiClient.get('/patients', { params: { search } });
+export async function listPatients(search = '', page = 0, size = 10, sort = null) {
+  const { data } = await apiClient.get('/patients', { params: { search, page, size, sort } });
   return data;
 }
 

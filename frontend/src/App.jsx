@@ -4,6 +4,7 @@ import LoginPage from './components/Login/LoginPage.jsx';
 import RegisterPage from './components/Register/RegisterPage.jsx';
 import DashboardPage from './components/Dashboard/DashboardPage.jsx';
 import PatientDetailPage from './components/Patient/PatientDetailPage.jsx';
+import PharmacyPage from './components/Pharmacy/PharmacyPage.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function ProtectedRoute({ children }) {
@@ -23,6 +24,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/pharmacy"
+        element={
+          <ProtectedRoute>
+            <PharmacyPage />
           </ProtectedRoute>
         }
       />
