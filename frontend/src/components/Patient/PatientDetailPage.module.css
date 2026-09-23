@@ -1,25 +1,14 @@
-.page {
-  min-height: 100vh;
-  background: var(--bg-soft);
-}
-
-.topbar {
-  background: var(--white);
-  border-bottom: 1px solid var(--line);
-  padding: 16px 32px;
-}
 .backLink {
+  display: inline-block;
   color: var(--ink-soft);
   text-decoration: none;
   font-weight: 700;
   font-size: 0.9rem;
+  margin-bottom: 16px;
 }
 .backLink:hover { color: var(--ink); }
 
 .content {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -35,8 +24,9 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  box-shadow: 0 24px 48px -32px rgba(11, 18, 32, .18);
 }
-.header h1 { margin: 0 0 4px; font-size: 1.4rem; }
+.header h1 { margin: 0 0 4px; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; }
 .headerMeta { color: var(--ink-soft); font-size: 0.92rem; display: flex; gap: 16px; flex-wrap: wrap; }
 
 .section {
@@ -44,6 +34,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 24px 28px;
+  box-shadow: 0 24px 48px -32px rgba(11, 18, 32, .18);
 }
 .sectionHead {
   display: flex;
@@ -51,14 +42,16 @@
   justify-content: space-between;
   margin-bottom: 16px;
 }
-.sectionHead h2 { margin: 0; font-size: 1.1rem; }
+.sectionHead h2 { margin: 0; font-size: 1.12rem; font-weight: 700; letter-spacing: -0.01em; }
 
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .item {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px 16px;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
+.item:hover { border-color: var(--green-light); box-shadow: 0 12px 28px -20px var(--green-glow); }
 .itemTop { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; font-size: 0.94rem; }
 .itemTag {
   background: var(--green-mist);

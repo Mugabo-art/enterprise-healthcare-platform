@@ -10,11 +10,13 @@ erDiagram
     PATIENTS ||--o{ MEDICAL_HISTORY_ENTRIES : has
     PATIENTS ||--o{ VISITS : has
     PATIENTS ||--o{ PRESCRIPTIONS : has
+    PATIENTS ||--o{ LAB_REQUESTS : has
     PATIENTS ||--o{ INVOICES : billed
     VISITS ||--o{ PRESCRIPTIONS : generates
     VISITS ||--o{ LAB_REQUESTS : generates
     VISITS ||--o| INVOICES : "billed via"
-    MEDICATIONS ||--o{ PRESCRIPTIONS : "prescribed as"
+    MEDICATIONS ||--o{ DISPENSATIONS : "dispensed as"
+    PRESCRIPTIONS ||--o| DISPENSATIONS : "filled by"
     LAB_REQUESTS ||--|| LAB_RESULTS : produces
     INVOICES ||--o{ PAYMENTS : "paid via"
 
@@ -57,6 +59,7 @@ erDiagram
     }
     LAB_REQUESTS {
         uuid id PK
+        uuid patient_id FK
         uuid visit_id FK
         varchar test_type
         enum status
@@ -69,7 +72,17 @@ erDiagram
     MEDICATIONS {
         uuid id PK
         varchar name
+        varchar unit
         int stock_quantity
+        int reorder_threshold
+        boolean active
+    }
+    DISPENSATIONS {
+        uuid id PK
+        uuid patient_id FK
+        uuid prescription_id FK
+        uuid medication_id FK
+        int quantity
     }
     INVOICES {
         uuid id PK

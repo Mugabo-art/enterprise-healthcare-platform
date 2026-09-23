@@ -139,7 +139,232 @@ paths:
                 $ref: '#/components/schemas/Patient'
         '404':
           description: Not found
+  /patients/{patientId}/lab-requests:
+    get:
+      summary: List a patient's lab requests, newest first
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      responses:
+        '200':
+          description: Lab request list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LabRequest'
+  /patients/{patientId}/visits/{visitId}/lab-requests:
+    post:
+      summary: Request a lab test for a patient's visit (ADMIN, NURSE, DOCTOR)
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - in: path
+          name: visitId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabRequestCreateRequest'
+      responses:
+        '201':
+          description: Lab request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabRequest'
+  /patients/{patientId}/lab-requests/{labRequestId}/status:
+    put:
+      summary: Update a lab request's workflow status (ADMIN, LAB_TECH)
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - in: path
+          name: labRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [REQUESTED, IN_PROGRESS, COMPLETED, CANCELLED]
+      responses:
+        '200':
+          description: Updated lab request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabRequest'
+        '409':
+          description: Request already completed
+  /patients/{patientId}/lab-requests/{labRequestId}/result:
+    post:
+      summary: Record a result against a lab request (ADMIN, LAB_TECH)
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - in: path
+          name: labRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resultData]
+              properties:
+                resultData:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Result recorded, request marked COMPLETED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResult'
+        '409':
+          description: A result already exists for this request
+    get:
+      summary: Get the result recorded for a lab request
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - in: path
+          name: labRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lab result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResult'
+        '404':
+          description: No result recorded yet
+  /medications:
+    get:
+      summary: List medication inventory (ADMIN, PHARMACIST, DOCTOR)
+      parameters:
+        - in: query
+          name: lowStock
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Medications ordered by name
+    post:
+      summary: Add a medication (ADMIN, PHARMACIST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, unit, stockQuantity, reorderThreshold]
+              properties:
+                name: { type: string }
+                unit: { type: string }
+                stockQuantity: { type: integer, minimum: 0 }
+                reorderThreshold: { type: integer, minimum: 0 }
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Name already exists
+  /medications/{id}:
+    put:
+      summary: Update unit, reorder threshold or active flag (ADMIN, PHARMACIST)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated
+  /medications/{id}/restock:
+    post:
+      summary: Add received stock (ADMIN, PHARMACIST)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Restocked
+  /pharmacy/prescriptions:
+    get:
+      summary: Active prescriptions awaiting dispensing, oldest first (ADMIN, PHARMACIST)
+      responses:
+        '200':
+          description: Work queue
+  /prescriptions/{prescriptionId}/dispense:
+    post:
+      summary: Dispense a prescription; decrements stock and completes it (ADMIN, PHARMACIST)
+      parameters:
+        - in: path
+          name: prescriptionId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [medicationId, quantity]
+              properties:
+                medicationId: { type: string, format: uuid }
+                quantity: { type: integer, minimum: 1 }
+      responses:
+        '201':
+          description: Dispensed
+        '409':
+          description: Prescription not active, medication inactive, or insufficient stock
+  /patients/{patientId}/dispensations:
+    get:
+      summary: A patient's dispensing history, newest first
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      responses:
+        '200':
+          description: Dispensations
+
 components:
+  parameters:
+    PatientId:
+      in: path
+      name: patientId
+      required: true
+      schema:
+        type: string
+        format: uuid
   securitySchemes:
     bearerAuth:
       type: http
@@ -215,3 +440,54 @@ components:
             createdAt:
               type: string
               format: date-time
+    LabRequestCreateRequest:
+      type: object
+      required: [testType]
+      properties:
+        testType:
+          type: string
+        notes:
+          type: string
+    LabRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+        requestedById:
+          type: string
+          format: uuid
+        testType:
+          type: string
+        status:
+          type: string
+          enum: [REQUESTED, IN_PROGRESS, COMPLETED, CANCELLED]
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    LabResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        labRequestId:
+          type: string
+          format: uuid
+        recordedById:
+          type: string
+          format: uuid
+        resultData:
+          type: object
+          additionalProperties: true
+        recordedAt:
+          type: string
+          format: date-time

@@ -25,6 +25,12 @@
              there ("Unknown Java version: 0" / inline mock maker init failure). -->
         <mockito.version>5.23.0</mockito.version>
         <byte-buddy.version>1.18.11</byte-buddy.version>
+        <!-- Spring Boot 3.3.4 pins Lombok 1.18.32, which predates JDK 25 support:
+             its annotation processor silently no-ops on JDK 25 instead of
+             generating getters/setters/builders, so every Lombok-annotated class
+             fails to compile ("cannot find symbol" for methods that should be
+             generated). -->
+        <lombok.version>1.18.48</lombok.version>
     </properties>
 
     <dependencies>
@@ -135,6 +141,25 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- On this JDK 25 toolchain, javac's implicit annotation-processor
+                         discovery via -classpath silently finds nothing (reproduced
+                         outside Maven too), so Lombok never runs and every
+                         Lombok-annotated class fails with "cannot find symbol" for
+                         its generated methods. Declaring the processor path
+                         explicitly makes discovery work regardless of that quirk. -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>

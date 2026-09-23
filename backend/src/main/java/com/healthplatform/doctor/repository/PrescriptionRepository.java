@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public interface PrescriptionRepository extends JpaRepository<Prescription, UUID> {
     List<Prescription> findByPatientIdOrderByCreatedAtDesc(UUID patientId);
+    List<Prescription> findByStatusOrderByCreatedAtAsc(com.healthplatform.doctor.model.PrescriptionStatus status);
 
     // doctorId == null means hospital-wide (no filter) — see AnalyticsService.
     @Query("SELECT COUNT(p) FROM Prescription p WHERE (:doctorId IS NULL OR p.prescribedById = :doctorId)")

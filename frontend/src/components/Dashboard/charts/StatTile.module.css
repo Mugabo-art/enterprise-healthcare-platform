@@ -2,12 +2,56 @@
   background: var(--white);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 20px 22px;
+  padding: 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+  box-shadow: 0 24px 48px -32px rgba(11, 18, 32, .18);
+  transition: transform .18s ease, box-shadow .18s ease;
 }
+.tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 28px 54px -26px rgba(11, 18, 32, .22);
+}
+
+.tileRich {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+.tileRich .tileMain { flex: 1 1 auto; min-width: 0; }
+
+.tileMain { display: flex; flex-direction: column; gap: 6px; }
+
+.tileTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.iconBadge {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: linear-gradient(150deg, var(--green-mist), color-mix(in srgb, var(--green-mist) 50%, var(--white)));
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.iconBadgeSvg { width: 20px; height: 20px; stroke: var(--green-dark); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+.kebab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.kebab span { width: 3px; height: 3px; border-radius: 50%; background: var(--line); }
 
 .label {
   font-size: 0.78rem;
@@ -18,8 +62,9 @@
 }
 
 .value {
-  font-size: 2rem;
+  font-size: 2.1rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--ink);
   line-height: 1.1;
   font-variant-numeric: proportional-nums;
@@ -28,4 +73,46 @@
 .hint {
   font-size: 0.82rem;
   color: var(--ink-soft);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--green-dark);
+  background: var(--green-mist);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.badgeIcon { width: 11px; height: 11px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+.breakdown {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 2px 0 0 14px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  flex-shrink: 0;
+  min-width: 92px;
+}
+.breakdownRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.breakdownLabel { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; }
+.breakdownValue { color: var(--ink); font-weight: 800; margin-left: auto; padding-left: 6px; }
+
+@media (max-width: 1200px) {
+  .tileRich { flex-direction: column; }
+  .breakdown { border-left: none; border-top: 1px solid var(--line); padding: 10px 0 0; flex-direction: row; flex-wrap: wrap; gap: 10px 16px; }
 }

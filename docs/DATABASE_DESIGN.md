@@ -81,9 +81,11 @@
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID PK | |
+| patient_id | UUID FK → patients.id | indexed — denormalized alongside visit_id so listing a patient's lab requests doesn't require joining through visits, matching the `prescriptions` table's shape |
 | visit_id | UUID FK → visits.id | indexed |
 | test_type | VARCHAR | |
-| status | ENUM | REQUESTED, IN_PROGRESS, COMPLETED |
+| status | ENUM | REQUESTED, IN_PROGRESS, COMPLETED, CANCELLED — CANCELLED added to match how `visits`/`prescriptions` already model workflow state |
+| notes | TEXT | |
 | requested_by | UUID FK → users.id | |
 
 ### lab_results
@@ -99,10 +101,25 @@
 | Column | Type | Notes |
 |---|---|---|
 | id | UUID PK | |
-| name | VARCHAR | indexed |
-| stock_quantity | INTEGER | |
-| reorder_threshold | INTEGER | |
-| unit_price | NUMERIC(10,2) | |
+| name | VARCHAR(150) | unique |
+| unit | VARCHAR(30) | e.g. tablets, ml |
+| stock_quantity | INTEGER | CHECK >= 0 |
+| reorder_threshold | INTEGER | low-stock when stock_quantity <= threshold |
+| active | BOOLEAN | inactive items cannot be dispensed |
+| created_at / updated_at | TIMESTAMP | |
+
+`unit_price` is deferred to the billing module.
+
+### dispensations
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID PK | |
+| patient_id | UUID FK → patients.id | |
+| prescription_id | UUID FK → prescriptions.id | UNIQUE — one fill per prescription |
+| medication_id | UUID FK → medications.id | |
+| quantity | INTEGER | CHECK > 0 |
+| dispensed_by_id | UUID FK → users.id | |
+| dispensed_at | TIMESTAMP | |
 
 ### invoices
 | Column | Type | Notes |

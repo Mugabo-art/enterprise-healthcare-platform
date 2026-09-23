@@ -4,6 +4,7 @@ import com.healthplatform.common.exception.ApiException;
 import com.healthplatform.doctor.dto.PrescriptionCreateRequest;
 import com.healthplatform.doctor.dto.PrescriptionResponse;
 import com.healthplatform.doctor.model.Prescription;
+import com.healthplatform.doctor.model.PrescriptionStatus;
 import com.healthplatform.doctor.repository.PrescriptionRepository;
 import com.healthplatform.patient.model.Patient;
 import com.healthplatform.patient.repository.PatientRepository;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,6 +55,29 @@ public class PrescriptionService {
                 .stream()
                 .map(PrescriptionResponse::from)
                 .toList();
+    }
+
+    public List<PrescriptionResponse> listActive() {
+        return prescriptionRepository.findByStatusOrderByCreatedAtAsc(PrescriptionStatus.ACTIVE)
+                .stream()
+                .map(PrescriptionResponse::from)
+                .toList();
+    }
+
+    public Prescription getActiveForDispense(UUID prescriptionId) {
+        Prescription prescription = prescriptionRepository.findById(prescriptionId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Prescription not found"));
+        if (prescription.getStatus() != PrescriptionStatus.ACTIVE) {
+            throw new ApiException(HttpStatus.CONFLICT, "Prescription is " + prescription.getStatus() + " and cannot be dispensed");
+        }
+        return prescription;
+    }
+
+    @Transactional
+    public void markCompleted(Prescription prescription) {
+        prescription.setStatus(PrescriptionStatus.COMPLETED);
+        prescription.setUpdatedAt(Instant.now());
+        prescriptionRepository.save(prescription);
     }
 
     private Patient findActivePatient(UUID patientId) {
