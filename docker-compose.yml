@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${DB_USER:-healthplatform}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432" # loopback only: the DB is not exposed to the network
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -61,6 +61,10 @@ services:
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_local_dev_secret_at_least_32_bytes}
+      # LOCAL DEV STACK: the dev profile adds the demo seed (admin@hospital.test) and verbose SQL logging.
+      # For a real deployment use the prod profile (see docs/DEPLOYMENT_GUIDE.md) — never this file as-is.
+      SPRING_PROFILES_ACTIVE: dev
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
     ports:
       - "8080:8080"
 
@@ -69,7 +73,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "5173:8080"
 
   prometheus:
     image: prom/prometheus:v2.54.1

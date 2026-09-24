@@ -5,7 +5,14 @@ metadata:
   namespace: healthcare-platform
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    # ingress-nginx: force HTTPS, cap request size (attachments are limited to 10MB by the backend),
+    # and add a coarse per-client rate limit in front of the application-level limiter.
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 11m
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts: ["healthcare.example.com"]
       secretName: healthcare-tls
@@ -13,6 +20,7 @@ spec:
     - host: healthcare.example.com
       http:
         paths:
+          # Only /api reaches the backend; /actuator and /swagger-ui are deliberately not routed.
           - path: /api
             pathType: Prefix
             backend:

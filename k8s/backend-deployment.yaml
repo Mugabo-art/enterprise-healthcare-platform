@@ -13,32 +13,62 @@ spec:
   template:
     metadata:
       labels: { app: backend }
+      annotations:
+        # Actuator lives on the cluster-internal management port, never on the public 8080.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
     spec:
+      terminationGracePeriodSeconds: 45 # > spring.lifecycle.timeout-per-shutdown-phase (30s)
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: backend
-          image: ghcr.io/Mugabo-art/enterprise-healthcare-platform/backend:latest
-          ports: [{ containerPort: 8080 }]
+          # Tag is pinned to the commit SHA by CI via kustomize (see kustomization.yaml) — never :latest.
+          image: ghcr.io/mugabo-art/enterprise-healthcare-platform/backend
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: management, containerPort: 8081 }
           envFrom:
             - secretRef: { name: healthcare-db-secret }
-            - secretRef: { name: healthcare-app-secret }
+            - secretRef: { name: healthcare-app-secret } # JWT_SECRET (+ optional BOOTSTRAP_ADMIN_*)
           env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: prod
+            - name: CORS_ALLOWED_ORIGINS
+              value: https://healthcare.example.com # must match the ingress host
+            - name: MANAGEMENT_PORT
+              value: "8081"
             - name: DB_HOST
               value: postgres
             - name: REDIS_HOST
               value: redis
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp } # JVM + multipart uploads need a writable /tmp
           resources:
             requests: { cpu: "250m", memory: "512Mi" }
             limits: { cpu: "1", memory: "1Gi" }
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8081 }
+            periodSeconds: 5
+            failureThreshold: 30 # up to 150s for Flyway migrations on first boot
           readinessProbe:
-            httpGet: { path: /actuator/health/readiness, port: 8080 }
-            initialDelaySeconds: 20
+            httpGet: { path: /actuator/health/readiness, port: 8081 }
             periodSeconds: 10
           livenessProbe:
-            httpGet: { path: /actuator/health/liveness, port: 8080 }
-            initialDelaySeconds: 30
+            httpGet: { path: /actuator/health/liveness, port: 8081 }
             periodSeconds: 15
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -47,4 +77,5 @@ metadata:
   namespace: healthcare-platform
 spec:
   selector: { app: backend }
-  ports: [{ port: 8080, targetPort: 8080 }]
+  # Only the API port is published through the Service; 8081 (actuator) is reachable pod-to-pod only.
+  ports: [{ name: http, port: 8080, targetPort: http }]

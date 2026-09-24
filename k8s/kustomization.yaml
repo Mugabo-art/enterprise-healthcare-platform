@@ -1,0 +1,23 @@
+# Entry point for ArgoCD / `kubectl apply -k k8s/`.
+# CI (docker-images job) pins the image tags below to the commit SHA that was built and scanned,
+# so every deploy is an auditable, reproducible git commit — no :latest anywhere.
+# secrets.example.yaml is intentionally NOT listed: create real secrets out-of-band (Sealed Secrets,
+# External Secrets, Vault).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: healthcare-platform
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - redis.yaml
+  - backend-deployment.yaml
+  - frontend-deployment.yaml
+  - ingress.yaml
+  - autoscaling.yaml
+  - network-policies.yaml
+  - postgres-backup.yaml
+images:
+  - name: ghcr.io/mugabo-art/enterprise-healthcare-platform/backend
+    newTag: bootstrap # replaced by CI with the commit SHA
+  - name: ghcr.io/mugabo-art/enterprise-healthcare-platform/frontend
+    newTag: bootstrap # replaced by CI with the commit SHA

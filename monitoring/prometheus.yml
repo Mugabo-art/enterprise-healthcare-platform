@@ -2,6 +2,9 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
+  # Local docker-compose: the backend serves actuator on its main port.
+  # In Kubernetes the prod profile moves actuator to the cluster-internal management port 8081
+  # (see k8s/backend-deployment.yaml) — scrape backend:8081 there.
   - job_name: 'healthcare-backend'
     metrics_path: '/actuator/prometheus'
     static_configs:
