@@ -84,7 +84,7 @@ jobs:
       # Filesystem scan: vulnerable dependencies (pom.xml, package-lock.json), committed secrets,
       # and misconfiguration in Dockerfiles / Kubernetes manifests.
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -132,7 +132,7 @@ jobs:
           tags: ghcr.io/${{ env.IMAGE_REPO }}/frontend:${{ github.sha }}
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/${{ env.IMAGE_REPO }}/backend:${{ github.sha }}
           severity: CRITICAL
@@ -140,7 +140,7 @@ jobs:
           exit-code: '1'
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/${{ env.IMAGE_REPO }}/frontend:${{ github.sha }}
           severity: CRITICAL
