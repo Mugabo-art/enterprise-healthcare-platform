@@ -1,11 +1,13 @@
 package com.healthplatform.auth.service;
 
+import com.healthplatform.audit.service.AuditService;
 import com.healthplatform.auth.dto.*;
-import com.healthplatform.auth.model.RefreshToken;
+import com.healthplatform.auth.model.Role;
 import com.healthplatform.auth.model.User;
 import com.healthplatform.auth.repository.UserRepository;
 import com.healthplatform.auth.security.JwtService;
 import com.healthplatform.common.exception.ApiException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final LoginRateLimiter rateLimiter;
     private final MfaService mfaService;
+    private final AuditService auditService;
 
     public AuthService(
             UserRepository userRepository,
@@ -30,7 +33,8 @@ public class AuthService {
             JwtService jwtService,
             RefreshTokenService refreshTokenService,
             LoginRateLimiter rateLimiter,
-            MfaService mfaService
+            MfaService mfaService,
+            AuditService auditService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -38,76 +42,127 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
         this.rateLimiter = rateLimiter;
         this.mfaService = mfaService;
-    }
-
-    @Transactional
-    public UserResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email already registered");
-        }
-        User user = User.builder()
-                .email(request.email())
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .role(request.role())
-                .build();
-        return UserResponse.from(userRepository.save(user));
+        this.auditService = auditService;
     }
 
     /**
-     * Returns either AuthTokensResponse (no MFA / MFA already verified) or
-     * MfaChallengeResponse (MFA required) — caller distinguishes on type.
+     * Anyone may self-register a PATIENT account (a staff member must still link it to a patient
+     * record). Every other role is privileged and can only be granted by an authenticated ADMIN —
+     * otherwise the public endpoint would let anybody mint themselves an ADMIN.
      */
     @Transactional
+    public UserResponse register(RegisterRequest request, User caller) {
+        if (request.role() != Role.PATIENT && (caller == null || caller.getRole() != Role.ADMIN)) {
+            auditService.recordEvent("REGISTER", caller, request.email(), AuditService.OUTCOME_DENIED,
+                    "attempted to create role " + request.role(), null);
+            throw new ApiException(HttpStatus.FORBIDDEN, "Only an administrator can create staff accounts");
+        }
+        String email = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Email already registered");
+        }
+        User user = User.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .role(request.role())
+                .build();
+        User saved = userRepository.save(user);
+        auditService.recordEvent("REGISTER", caller, email, AuditService.OUTCOME_SUCCESS,
+                "created " + request.role() + " account " + saved.getId(), null);
+        return UserResponse.from(saved);
+    }
+
+    /**
+     * Returns either AuthTokensResponse (no MFA) or MfaChallengeResponse (MFA required) —
+     * caller distinguishes on type. noRollbackFor keeps nothing half-applied on expected failures.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
     public Object login(LoginRequest request) {
-        if (rateLimiter.isLocked(request.email())) {
+        String email = request.email().trim().toLowerCase();
+        if (rateLimiter.isLocked(email)) {
+            auditService.recordEvent("LOGIN", null, email, AuditService.OUTCOME_DENIED, "account temporarily locked", null);
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many failed attempts. Try again later.");
         }
 
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        // Compare against a real hash even for unknown emails so response time does not reveal
+        // which accounts exist.
+        boolean passwordOk;
+        if (user != null) {
+            passwordOk = passwordEncoder.matches(request.password(), user.getPasswordHash());
+        } else {
+            passwordEncoder.matches(request.password(), DUMMY_HASH); // result deliberately ignored
+            passwordOk = false;
+        }
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            rateLimiter.recordFailure(request.email());
+        if (!passwordOk) {
+            rateLimiter.recordFailure(email);
+            auditService.recordEvent("LOGIN", user, email, AuditService.OUTCOME_FAILURE, "invalid credentials", null);
             throw new BadCredentialsException("Invalid credentials");
         }
-
-        rateLimiter.reset(request.email());
-
-        if (user.isMfaEnabled()) {
-            // In a full implementation, the challengeId would be persisted with a short TTL
-            // and tied to this user; kept minimal here since the AI/notification modules
-            // aren't in v1 scope for this scaffold.
-            return new MfaChallengeResponse(true, user.getId());
+        if (!user.isAccountNonLocked()) {
+            auditService.recordEvent("LOGIN", user, email, AuditService.OUTCOME_DENIED, "account disabled", null);
+            throw new ApiException(HttpStatus.FORBIDDEN, "This account has been disabled");
         }
 
+        rateLimiter.reset(email);
+
+        if (user.isMfaEnabled()) {
+            auditService.recordEvent("LOGIN_MFA_CHALLENGE", user, email, AuditService.OUTCOME_SUCCESS, null, null);
+            return new MfaChallengeResponse(true, jwtService.generateMfaChallengeToken(user));
+        }
+
+        auditService.recordEvent("LOGIN", user, email, AuditService.OUTCOME_SUCCESS, null, null);
         return issueTokens(user);
     }
 
-    @Transactional
-    public AuthTokensResponse verifyMfaAndIssueTokens(UUID userId, String code) {
+    @Transactional(noRollbackFor = ApiException.class)
+    public AuthTokensResponse verifyMfaAndIssueTokens(String challengeToken, String code) {
+        UUID userId;
+        try {
+            userId = jwtService.parseMfaChallenge(challengeToken);
+        } catch (JwtException | IllegalArgumentException ex) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "MFA challenge expired or invalid. Log in again.");
+        }
+        String limiterKey = "mfa:" + userId;
+        if (rateLimiter.isLocked(limiterKey)) {
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many failed attempts. Try again later.");
+        }
+
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "MFA challenge expired or invalid. Log in again."));
 
         if (!user.isMfaEnabled() || user.getMfaSecret() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "MFA is not enabled for this user");
         }
         if (!mfaService.verifyCode(user.getMfaSecret(), code)) {
+            rateLimiter.recordFailure(limiterKey);
+            auditService.recordEvent("LOGIN_MFA", user, user.getEmail(), AuditService.OUTCOME_FAILURE, "invalid MFA code", null);
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid MFA code");
+        }
+        rateLimiter.reset(limiterKey);
+        auditService.recordEvent("LOGIN", user, user.getEmail(), AuditService.OUTCOME_SUCCESS, "mfa verified", null);
+        return issueTokens(user);
+    }
+
+    // noRollbackFor: refresh-token reuse detection revokes all sessions and THEN throws 401 —
+    // that revocation must be committed, not rolled back with the exception.
+    @Transactional(noRollbackFor = ApiException.class)
+    public AuthTokensResponse refresh(String rawRefreshToken) {
+        UUID userId = refreshTokenService.validateAndRotate(rawRefreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+        if (!user.isAccountNonLocked()) {
+            refreshTokenService.revokeAllForUser(userId);
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
         return issueTokens(user);
     }
 
     @Transactional
-    public AuthTokensResponse refresh(String rawRefreshToken) {
-        UUID userId = refreshTokenService.validateAndRotate(rawRefreshToken);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
-        return issueTokens(user);
-    }
-
-    @Transactional
-    public void logout(UUID userId) {
-        refreshTokenService.revokeAllForUser(userId);
+    public void logout(User user) {
+        refreshTokenService.revokeAllForUser(user.getId());
+        auditService.recordEvent("LOGOUT", user, user.getEmail(), AuditService.OUTCOME_SUCCESS, null, null);
     }
 
     /**
@@ -120,7 +175,7 @@ public class AuthService {
     public void linkPatient(UUID userId, UUID patientId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
-        if (user.getRole() != com.healthplatform.auth.model.Role.PATIENT) {
+        if (user.getRole() != Role.PATIENT) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Only PATIENT-role accounts can be linked to a patient record");
         }
         user.setPatientId(patientId);
@@ -132,4 +187,7 @@ public class AuthService {
         String refreshToken = refreshTokenService.issue(user);
         return new AuthTokensResponse(accessToken, refreshToken, jwtService.getAccessTokenTtlSeconds());
     }
+
+    // A valid bcrypt hash, only ever compared against (result discarded) to equalise timing for unknown emails.
+    private static final String DUMMY_HASH = "$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5b2z0JGSeGAJZbgpNqOZ1hrQpG9Wu";
 }

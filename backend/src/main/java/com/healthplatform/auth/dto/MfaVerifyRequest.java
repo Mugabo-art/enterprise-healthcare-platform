@@ -1,7 +1,5 @@
 package com.healthplatform.auth.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 
-import java.util.UUID;
-
-public record MfaVerifyRequest(@NotNull UUID challengeId, @NotNull String code) {}
+public record MfaVerifyRequest(@NotBlank String challengeId, @NotBlank String code) {}

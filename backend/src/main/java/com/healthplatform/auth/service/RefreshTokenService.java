@@ -5,8 +5,12 @@ import com.healthplatform.auth.model.User;
 import com.healthplatform.auth.repository.RefreshTokenRepository;
 import com.healthplatform.common.exception.ApiException;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,6 +27,8 @@ import java.util.UUID;
  */
 @Service
 public class RefreshTokenService {
+
+    private static final Logger log = LoggerFactory.getLogger(RefreshTokenService.class);
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final long refreshTokenTtlDays;
@@ -51,7 +57,14 @@ public class RefreshTokenService {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash(rawToken))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
 
-        if (stored.isRevoked() || stored.getExpiresAt().isBefore(Instant.now())) {
+        if (stored.isRevoked()) {
+            // A rotated-away token being presented again means it was copied (theft) or replayed.
+            // Kill every session for the user so both the thief and the victim must log in again.
+            log.warn("Refresh token reuse detected for user {} — revoking all sessions", stored.getUserId());
+            refreshTokenRepository.deleteByUserId(stored.getUserId());
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Refresh token expired or revoked");
+        }
+        if (stored.getExpiresAt().isBefore(Instant.now())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Refresh token expired or revoked");
         }
 
@@ -62,6 +75,16 @@ public class RefreshTokenService {
 
     public void revokeAllForUser(UUID userId) {
         refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    /** Expired rows are useless and only grow the table (and the blast radius of a DB leak). */
+    @Scheduled(cron = "0 15 3 * * *")
+    @Transactional
+    public void purgeExpired() {
+        int removed = refreshTokenRepository.deleteExpiredBefore(Instant.now());
+        if (removed > 0) {
+            log.info("Purged {} expired refresh tokens", removed);
+        }
     }
 
     private String generateRawToken() {

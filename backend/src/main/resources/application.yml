@@ -4,7 +4,9 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:healthplatform}
     username: ${DB_USER:healthplatform}
-    password: ${DB_PASSWORD:changeme}
+    password: ${DB_PASSWORD:changeme} # local-dev fallback only — the prod profile removes it
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
   jpa:
     hibernate:
       ddl-auto: validate # schema is owned by Flyway migrations, not Hibernate auto-DDL
@@ -12,7 +14,7 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration # dev-only seeds live in db/dev and are added by the dev profile
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -26,15 +28,29 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 server:
   port: 8080
+  error:
+    include-stacktrace: never
+    include-message: never
 
 app:
   jwt:
-    secret: ${JWT_SECRET:CHANGE_ME_IN_PRODUCTION_this_must_be_at_least_32_bytes_long}
+    secret: ${JWT_SECRET:CHANGE_ME_IN_PRODUCTION_this_must_be_at_least_32_bytes_long} # local-dev fallback only
     access-token-ttl-ms: 900000        # 15 minutes — see docs/SRS.md FR-1.2
     refresh-token-ttl-days: 7
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  rate-limit:
+    auth-requests-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:30} # per client IP, on /api/auth/*
+  # Creates the first ADMIN when the users table is empty (production has no seeded account).
+  # Unset both after the first start and rotate the password.
+  bootstrap-admin:
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
 management:
   endpoints:
@@ -46,6 +62,12 @@ management:
       probes:
         enabled: true
       show-details: never # never leak internal details in health responses (prod safety)
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 springdoc:
   swagger-ui:
@@ -55,5 +77,3 @@ logging:
   level:
     root: INFO
     com.healthplatform: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
