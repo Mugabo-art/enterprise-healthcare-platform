@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <jjwt.version>0.12.6</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <!-- Boot 3.3's managed 1.19.x cannot talk to Docker Engine 29+ (min API version bump). -->
         <testcontainers.version>1.21.4</testcontainers.version>
         <!-- Spring Boot 3.3.4 pins Mockito 5.11.0 and byte-buddy 1.14.19, both of
