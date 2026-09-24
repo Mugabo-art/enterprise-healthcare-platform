@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setAuthToken } from '../services/apiClient.js';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { setAuthToken, configureSession } from '../services/apiClient.js';
 import * as authService from '../services/authService.js';
 
 const AuthContext = createContext(null);
@@ -28,6 +28,23 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   }, []);
+
+  // Let the API client silently refresh an expired access token (and log out if that fails).
+  const refreshTokenRef = useRef(null);
+  useEffect(() => {
+    refreshTokenRef.current = refreshToken;
+  }, [refreshToken]);
+  useEffect(() => {
+    configureSession({
+      getRefreshToken: () => refreshTokenRef.current || localStorage.getItem(REFRESH_TOKEN_KEY),
+      onTokens: (tokens) => {
+        refreshTokenRef.current = tokens.refreshToken; // before state settles: next 401 must use the rotated token
+        applyTokens(tokens);
+      },
+      onLogout: clearSession,
+    });
+    return () => configureSession(null);
+  }, [applyTokens, clearSession]);
 
   // Rehydrate the session on load so a page refresh doesn't log the user out.
   useEffect(() => {

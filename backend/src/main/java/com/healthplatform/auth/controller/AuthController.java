@@ -23,9 +23,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Register a new staff user")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    @Operation(summary = "Self-register a PATIENT account; any other role requires an authenticated ADMIN")
+    public ResponseEntity<UserResponse> register(
+            @Valid @RequestBody RegisterRequest request,
+            @AuthenticationPrincipal User caller // null for anonymous requests
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request, caller));
     }
 
     @PostMapping("/login")
@@ -53,7 +56,7 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(summary = "Revoke all refresh tokens for the current user")
     public ResponseEntity<Void> logout(@AuthenticationPrincipal User user) {
-        authService.logout(user.getId());
+        authService.logout(user);
         return ResponseEntity.noContent().build();
     }
 

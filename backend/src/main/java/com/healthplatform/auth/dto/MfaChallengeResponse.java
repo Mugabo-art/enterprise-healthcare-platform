@@ -1,5 +1,4 @@
 package com.healthplatform.auth.dto;
 
-import java.util.UUID;
-
-public record MfaChallengeResponse(boolean mfaRequired, UUID challengeId) {}
+/** challengeId is a short-lived signed token (not a user id) — see JwtService#generateMfaChallengeToken. */
+public record MfaChallengeResponse(boolean mfaRequired, String challengeId) {}

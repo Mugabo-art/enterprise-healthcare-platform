@@ -1,7 +1,11 @@
-# Activate with SPRING_PROFILES_ACTIVE=dev for verbose SQL logging during local development.
+# Activate with SPRING_PROFILES_ACTIVE=dev for local development: verbose SQL logging and the
+# dev-only seed migrations (db/dev — includes the admin@hospital.test demo account).
+# NEVER activate this profile against a real environment.
 spring:
   jpa:
     show-sql: true
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
 logging:
   level:
     com.healthplatform: DEBUG
