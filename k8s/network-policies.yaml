@@ -1,0 +1,122 @@
+# Default-deny, then allow only the flows the platform needs. Requires a CNI that enforces
+# NetworkPolicy (Calico, Cilium, ...). Adjust the ingress-controller / monitoring namespace labels
+# to match your cluster.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: healthcare-platform
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# Every pod may resolve DNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: healthcare-platform
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+---
+# Public traffic enters only through the ingress controller.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-controller-to-web
+  namespace: healthcare-platform
+spec:
+  podSelector:
+    matchExpressions:
+      - { key: app, operator: In, values: [backend, frontend] }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: ingress-nginx }
+      ports:
+        - { protocol: TCP, port: 8080 }
+---
+# Prometheus (monitoring namespace) may scrape the actuator port.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-to-backend-management
+  namespace: healthcare-platform
+spec:
+  podSelector:
+    matchLabels: { app: backend }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: monitoring }
+      ports:
+        - { protocol: TCP, port: 8081 }
+---
+# Backend egress: Postgres, Redis (and Kafka, if deployed in-namespace). Nothing else.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-egress
+  namespace: healthcare-platform
+spec:
+  podSelector:
+    matchLabels: { app: backend }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ protocol: TCP, port: 5432 }]
+    - to: [{ podSelector: { matchLabels: { app: redis } } }]
+      ports: [{ protocol: TCP, port: 6379 }]
+    - to: [{ podSelector: { matchLabels: { app: kafka } } }]
+      ports: [{ protocol: TCP, port: 9092 }]
+---
+# Databases accept connections only from the backend (and the backup job for Postgres).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-ingress
+  namespace: healthcare-platform
+spec:
+  podSelector:
+    matchLabels: { app: postgres }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: backend } }
+        - podSelector: { matchLabels: { app: postgres-backup } }
+      ports: [{ protocol: TCP, port: 5432 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-ingress
+  namespace: healthcare-platform
+spec:
+  podSelector:
+    matchLabels: { app: redis }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: backend } }
+      ports: [{ protocol: TCP, port: 6379 }]
+---
+# Backup job: reach Postgres only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-backup-egress
+  namespace: healthcare-platform
+spec:
+  podSelector:
+    matchLabels: { app: postgres-backup }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ protocol: TCP, port: 5432 }]

@@ -12,12 +12,33 @@ spec:
     metadata:
       labels: { app: postgres }
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70 # postgres user in the alpine image
+        fsGroup: 70
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: postgres
           image: postgres:16-alpine
           ports: [{ containerPort: 5432 }]
           envFrom:
             - secretRef: { name: healthcare-db-secret }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 30
+            periodSeconds: 20
           volumeMounts:
             - name: pgdata
               mountPath: /var/lib/postgresql/data
@@ -25,6 +46,7 @@ spec:
     - metadata: { name: pgdata }
       spec:
         accessModes: ["ReadWriteOnce"]
+        # volumeClaimTemplates are immutable on a live StatefulSet — resize the PVC itself instead.
         resources: { requests: { storage: 5Gi } }
 ---
 apiVersion: v1

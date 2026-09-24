@@ -1,0 +1,65 @@
+# Nightly logical backup (pg_dump, custom format) onto a dedicated volume, 7 days retained.
+#
+# IMPORTANT: a backup that lives in the same cluster as the database does not survive losing the
+# cluster/storage. Ship /backups off-cluster (object storage, another region) — e.g. add an
+# `aws s3 sync` / rclone step or use your storage vendor's volume snapshots — and TEST A RESTORE
+# regularly (see docs/DEPLOYMENT_GUIDE.md, "Backup & restore").
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backups
+  namespace: healthcare-platform
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: healthcare-platform
+spec:
+  schedule: "30 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels: { app: postgres-backup }
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70 # postgres user in the alpine image
+            fsGroup: 70
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: pg-dump
+              image: postgres:16-alpine
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities: { drop: ["ALL"] }
+              envFrom:
+                - secretRef: { name: healthcare-db-secret }
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  export PGPASSWORD="$DB_PASSWORD"
+                  file="/backups/${DB_NAME}-$(date +%Y%m%d-%H%M%S).dump"
+                  pg_dump -h postgres -U "$DB_USER" -d "$DB_NAME" -Fc -f "$file"
+                  echo "backup written: $file ($(du -h "$file" | cut -f1))"
+                  find /backups -name '*.dump' -mtime +7 -delete
+              resources:
+                requests: { cpu: "50m", memory: "128Mi" }
+                limits: { cpu: "500m", memory: "512Mi" }
+              volumeMounts:
+                - { name: backups, mountPath: /backups }
+          volumes:
+            - name: backups
+              persistentVolumeClaim: { claimName: postgres-backups }

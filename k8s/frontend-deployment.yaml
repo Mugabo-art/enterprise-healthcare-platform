@@ -5,19 +5,42 @@ metadata:
   namespace: healthcare-platform
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
   selector:
     matchLabels: { app: frontend }
   template:
     metadata:
       labels: { app: frontend }
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: frontend
-          image: ghcr.io/Mugabo-art/enterprise-healthcare-platform/frontend:latest
-          ports: [{ containerPort: 80 }]
+          # Tag is pinned to the commit SHA by CI via kustomize — never :latest.
+          image: ghcr.io/mugabo-art/enterprise-healthcare-platform/frontend
+          ports: [{ name: http, containerPort: 8080 }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp } # nginx pid + temp files
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "250m", memory: "128Mi" }
           readinessProbe:
-            httpGet: { path: /, port: 80 }
+            httpGet: { path: /, port: http }
             initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 20
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -26,4 +49,4 @@ metadata:
   namespace: healthcare-platform
 spec:
   selector: { app: frontend }
-  ports: [{ port: 80, targetPort: 80 }]
+  ports: [{ name: http, port: 80, targetPort: http }]
