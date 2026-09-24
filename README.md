@@ -43,7 +43,8 @@ Honesty over hype — here's what actually works today:
 | **Pharmacy** (medication inventory, low-stock alerts, dispensing against prescriptions) | ✅ Working end-to-end (DB → API → UI) |
 | Billing | 🚧 Scaffolded / planned — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module boundaries |
 | Observability (Prometheus + Grafana), containerized infra (Postgres, Redis, Kafka) | ✅ Running via Docker Compose |
-| Kubernetes manifests | ✅ Present in [`k8s/`](k8s/), for a real cluster deploy |
+| Kubernetes manifests | ✅ Present in [`k8s/`](k8s/) — kustomize, HPA, PDB, NetworkPolicies, non-root/read-only pods, nightly DB backup job |
+| **Production hardening** (fail-fast secrets validation, no seeded accounts, admin-only staff creation, audit trail, rate limiting, security headers, signed MFA challenge, refresh-token reuse detection, JSON logs + request ids, image scanning) | ✅ See [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md#production-configuration) |
 
 ## 🧩 Modules
 
