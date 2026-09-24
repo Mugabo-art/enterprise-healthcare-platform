@@ -118,14 +118,14 @@ jobs:
       # Images are tagged with the commit SHA only — an immutable reference — and are scanned BEFORE
       # they are pushed, so a vulnerable image never reaches the registry.
       - name: Build backend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           load: true
           tags: ghcr.io/${{ env.IMAGE_REPO }}/backend:${{ github.sha }}
 
       - name: Build frontend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           load: true
