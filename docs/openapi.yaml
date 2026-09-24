@@ -13,7 +13,7 @@ security:
 paths:
   /auth/register:
     post:
-      summary: Register a new staff user
+      summary: Self-register a PATIENT account (any other role requires an authenticated ADMIN, else 403)
       security: []
       requestBody:
         required: true
