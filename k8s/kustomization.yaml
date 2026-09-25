@@ -18,6 +18,6 @@ resources:
   - postgres-backup.yaml
 images:
   - name: ghcr.io/mugabo-art/enterprise-healthcare-platform/backend
-    newTag: bootstrap # replaced by CI with the commit SHA
+    newTag: f64c0eb1f2d5c14aed29f501469310e447515a7c
   - name: ghcr.io/mugabo-art/enterprise-healthcare-platform/frontend
-    newTag: bootstrap # replaced by CI with the commit SHA
+    newTag: f64c0eb1f2d5c14aed29f501469310e447515a7c
