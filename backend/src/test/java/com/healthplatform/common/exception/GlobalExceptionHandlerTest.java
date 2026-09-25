@@ -25,4 +25,40 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertEquals(403, response.getBody().get("status"));
     }
+
+    @Test
+    void unknownPath_is404NotServerError() {
+        var ex = new org.springframework.web.servlet.resource.NoResourceFoundException(
+                org.springframework.http.HttpMethod.GET, "swagger-ui.html");
+
+        ResponseEntity<Map<String, Object>> response = handler.handleFrameworkClientError(ex);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void wrongMethod_is405() {
+        var ex = new org.springframework.web.HttpRequestMethodNotSupportedException("DELETE");
+
+        assertEquals(HttpStatus.METHOD_NOT_ALLOWED, handler.handleFrameworkClientError(ex).getStatusCode());
+    }
+
+    @Test
+    void malformedJson_is400() {
+        var ex = new org.springframework.http.converter.HttpMessageNotReadableException(
+                "bad json", new org.springframework.mock.http.MockHttpInputMessage(new byte[0]));
+
+        ResponseEntity<Map<String, Object>> response = handler.handleUnreadableBody(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Malformed request body", response.getBody().get("message"));
+    }
+
+    @Test
+    void genuineServerFault_staysGenericAnd500_withoutLeakingDetails() {
+        ResponseEntity<Map<String, Object>> response = handler.handleGeneric(new IllegalStateException("db password is hunter2"));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("An unexpected error occurred", response.getBody().get("message"));
+    }
 }
