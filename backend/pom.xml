@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <jjwt.version>0.12.6</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <!-- Patched transitive versions newer than the ones Spring Boot 3.5.16 manages (Trivy CVE
              findings). Drop each override once a Boot release manages a fixed version itself. -->
         <tomcat.version>10.1.60</tomcat.version>
@@ -109,12 +109,12 @@
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
-            <version>8.0</version>
+            <version>8.1</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.17</version>
+            <version>2.9.1</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
