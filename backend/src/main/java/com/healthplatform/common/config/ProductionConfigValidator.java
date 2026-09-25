@@ -1,40 +1,43 @@
 package com.healthplatform.common.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 
-import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Refuses to start in the prod profile with a known-weak or placeholder configuration, so a
  * mis-deployed environment fails loudly at boot instead of running with a guessable JWT key.
+ *
+ * Invoked from {@link com.healthplatform.HealthcarePlatformApplication#main} as soon as the
+ * environment is prepared — BEFORE any bean is created — so a bad configuration can never get as far
+ * as connecting to (or running Flyway migrations against) the production database.
  */
-@Component
-@Profile("prod")
-public class ProductionConfigValidator {
+public final class ProductionConfigValidator {
 
-    private final String jwtSecret;
-    private final String dbPassword;
-    private final String corsOrigins;
+    private ProductionConfigValidator() {}
 
-    public ProductionConfigValidator(
-            @Value("${app.jwt.secret}") String jwtSecret,
-            @Value("${spring.datasource.password}") String dbPassword,
-            @Value("${app.cors.allowed-origins}") String corsOrigins
-    ) {
-        this.jwtSecret = jwtSecret;
-        this.dbPassword = dbPassword;
-        this.corsOrigins = corsOrigins;
-    }
-
-    @PostConstruct
-    void validate() {
-        List<String> problems = check(jwtSecret, dbPassword, corsOrigins);
+    /** No-op unless the prod profile is active. Throws IllegalStateException listing every problem. */
+    public static void validate(Environment env) {
+        if (!env.acceptsProfiles(Profiles.of("prod"))) {
+            return;
+        }
+        List<String> problems = check(
+                property(env, "app.jwt.secret"),
+                property(env, "spring.datasource.password"),
+                property(env, "app.cors.allowed-origins"));
         if (!problems.isEmpty()) {
             throw new IllegalStateException("Refusing to start with insecure production configuration: " + String.join("; ", problems));
+        }
+    }
+
+    // A required ${PLACEHOLDER} with no value makes getProperty throw; treat "unresolvable" as "missing".
+    private static String property(Environment env, String key) {
+        try {
+            return env.getProperty(key);
+        } catch (IllegalArgumentException unresolvedPlaceholder) {
+            return null;
         }
     }
 

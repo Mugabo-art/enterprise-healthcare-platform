@@ -1,6 +1,7 @@
 package com.healthplatform.common.config;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -50,5 +51,44 @@ class ProductionConfigValidatorTest {
     @Test
     void reportsEveryProblemAtOnce() throws Exception {
         assertEquals(3, check("x", "x", "*").size());
+    }
+
+    private static MockEnvironment env(String... profiles) {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles(profiles);
+        return env;
+    }
+
+    @Test
+    void validate_isANoOpOutsideTheProdProfile() {
+        // dev/test intentionally use placeholder secrets
+        assertDoesNotThrow(() -> ProductionConfigValidator.validate(env("dev")
+                .withProperty("app.jwt.secret", "CHANGE_ME").withProperty("spring.datasource.password", "changeme")));
+    }
+
+    @Test
+    void validate_failsFastInProdWhenSecretsAreMissing() {
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> ProductionConfigValidator.validate(env("prod")));
+        assertTrue(ex.getMessage().contains("JWT_SECRET"));
+        assertTrue(ex.getMessage().contains("DB_PASSWORD"));
+        assertTrue(ex.getMessage().contains("CORS_ALLOWED_ORIGINS"));
+    }
+
+    @Test
+    void validate_failsFastInProdWhenAPlaceholderCannotBeResolved() {
+        // application-prod.yml uses ${JWT_SECRET} with no default; an unset variable must read as "missing"
+        MockEnvironment env = env("prod").withProperty("app.jwt.secret", "${JWT_SECRET}")
+                .withProperty("spring.datasource.password", GOOD_DB).withProperty("app.cors.allowed-origins", GOOD_CORS);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> ProductionConfigValidator.validate(env));
+        assertTrue(ex.getMessage().contains("JWT_SECRET"));
+    }
+
+    @Test
+    void validate_acceptsStrongProdConfiguration() {
+        assertDoesNotThrow(() -> ProductionConfigValidator.validate(env("prod")
+                .withProperty("app.jwt.secret", GOOD_SECRET).withProperty("spring.datasource.password", GOOD_DB)
+                .withProperty("app.cors.allowed-origins", GOOD_CORS)));
     }
 }

@@ -20,30 +20,29 @@ import static org.junit.jupiter.api.Assertions.*;
  * things H2 cannot: the schema builds, the audit table is really append-only, and the production
  * migration path contains no dev seed accounts.
  *
+ * Each test gets its own throwaway container so results cannot depend on test order or leftover state.
  * Skipped automatically when Docker is not available (runs in CI).
  */
 @Testcontainers(disabledWithoutDocker = true)
 class MigrationIntegrationTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    private static Flyway flyway(String... locations) {
+    private Flyway flyway(String... locations) {
         return Flyway.configure()
-                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
                 .locations(locations)
-                .cleanDisabled(false)
                 .load();
     }
 
-    private static Connection connect() throws SQLException {
-        return DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+    private Connection connect() throws SQLException {
+        return DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
     @Test
     void productionMigrationsApplyCleanlyAndSeedNoAccounts() throws Exception {
         Flyway flyway = flyway("classpath:db/migration");
-        flyway.clean();
         flyway.migrate();
 
         try (Connection c = connect(); Statement s = c.createStatement()) {
@@ -56,7 +55,6 @@ class MigrationIntegrationTest {
     @Test
     void devSeedIsOnlyAppliedWhenTheDevLocationIsIncluded() throws Exception {
         Flyway flyway = flyway("classpath:db/migration", "classpath:db/dev");
-        flyway.clean();
         flyway.migrate();
 
         try (Connection c = connect(); Statement s = c.createStatement()) {
@@ -69,7 +67,6 @@ class MigrationIntegrationTest {
     @Test
     void auditLogRejectsUpdateAndDelete() throws Exception {
         Flyway flyway = flyway("classpath:db/migration");
-        flyway.clean();
         flyway.migrate();
 
         try (Connection c = connect(); Statement s = c.createStatement()) {

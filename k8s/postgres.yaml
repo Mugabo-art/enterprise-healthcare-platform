@@ -26,6 +26,7 @@ spec:
             - secretRef: { name: healthcare-db-secret }
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
           resources:
             requests: { cpu: "250m", memory: "512Mi" }
@@ -42,6 +43,12 @@ spec:
           volumeMounts:
             - name: pgdata
               mountPath: /var/lib/postgresql/data
+            # read-only root filesystem: postgres still needs these two writable
+            - { name: run, mountPath: /var/run/postgresql }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: run, emptyDir: {} }
+        - { name: tmp, emptyDir: {} }
   volumeClaimTemplates:
     - metadata: { name: pgdata }
       spec:

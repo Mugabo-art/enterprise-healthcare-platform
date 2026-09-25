@@ -1,10 +1,14 @@
 package com.healthplatform.common.exception;
 
+import jakarta.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
@@ -47,6 +51,29 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .orElse("Validation failed");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body(HttpStatus.BAD_REQUEST, message));
+    }
+
+    /** Unreadable/malformed request body (bad JSON, wrong types) is the client's fault: 400, not 500. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body(HttpStatus.BAD_REQUEST, "Malformed request body"));
+    }
+
+    /**
+     * Spring's own client-error exceptions (unknown path -> 404, wrong method -> 405, missing parameter -> 400,
+     * unsupported media type -> 415 ...) already know their status; without this they fell through to the
+     * catch-all below and were reported as 500s.
+     */
+    @ExceptionHandler({ServletException.class, ErrorResponseException.class})
+    public ResponseEntity<Map<String, Object>> handleFrameworkClientError(Exception ex) {
+        if (!(ex instanceof ErrorResponse errorResponse)) {
+            return handleGeneric(ex);
+        }
+        HttpStatus status = HttpStatus.resolve(errorResponse.getStatusCode().value());
+        if (status == null || status.is5xxServerError()) {
+            return handleGeneric(ex);
+        }
+        return ResponseEntity.status(status).body(body(status, status.getReasonPhrase()));
     }
 
     @ExceptionHandler(Exception.class)
