@@ -14,6 +14,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Trivy runs from a pinned official image rather than a third-party action.
+  TRIVY_IMAGE: aquasec/trivy:0.58.0
+
 jobs:
   backend:
     name: Backend build & test
@@ -84,15 +88,10 @@ jobs:
       # Filesystem scan: vulnerable dependencies (pom.xml, package-lock.json), committed secrets,
       # and misconfiguration in Dockerfiles / Kubernetes manifests.
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,secret,misconfig
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          skip-dirs: frontend/node_modules,backend/target
-          exit-code: '1'
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work "$TRIVY_IMAGE" fs . \
+            --scanners vuln,secret,misconfig --severity CRITICAL,HIGH --ignore-unfixed \
+            --skip-dirs frontend/node_modules,backend/target --exit-code 1
 
   docker-images:
     name: Build, scan & push images
@@ -131,21 +130,13 @@ jobs:
           load: true
           tags: ghcr.io/${{ env.IMAGE_REPO }}/frontend:${{ github.sha }}
 
-      - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: ghcr.io/${{ env.IMAGE_REPO }}/backend:${{ github.sha }}
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
-
-      - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: ghcr.io/${{ env.IMAGE_REPO }}/frontend:${{ github.sha }}
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
+      - name: Scan images
+        run: |
+          for svc in backend frontend; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image \
+              --severity CRITICAL --ignore-unfixed --exit-code 1 \
+              "ghcr.io/${IMAGE_REPO}/${svc}:${GITHUB_SHA}"
+          done
 
       - name: Push images
         run: |
