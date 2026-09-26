@@ -49,14 +49,14 @@ body {
   padding: 2rem;
   box-shadow: 0 20px 50px -30px rgba(11, 18, 16, 0.25);
 }
-input, select {
+input, select, textarea {
   font-size: 1rem;
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--line);
   font-family: inherit;
 }
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--green);
   box-shadow: 0 0 0 3px var(--green-glow);

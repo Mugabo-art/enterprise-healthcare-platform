@@ -36,7 +36,7 @@ Honesty over hype — here's what actually works today:
 |---|---|
 | **Auth** (register, login, JWT + refresh tokens, role-based access) | ✅ Working end-to-end |
 | **Patient records** (search, view) | ✅ Working end-to-end (DB → API → UI) |
-| **Doctor module** (schedule view, prescriptions, visit diagnosis/status) | ✅ Working end-to-end (API; no UI yet) |
+| **Doctor module** (schedule view, prescriptions, visit diagnosis/status) | ✅ Working end-to-end (DB → API → UI) |
 | **Analytics dashboard** (KPI tiles, visit trend, status/type breakdowns, role-scoped) | ✅ Working end-to-end (DB → API → UI) |
 | **Patient self-service portal** (a PATIENT-role account, once linked by staff, reads its own record only) | ✅ Working end-to-end (DB → API → UI) |
 | **Lab workflow** (test requests against a visit, results, status tracking) | ✅ Working end-to-end (DB → API → UI) |

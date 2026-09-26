@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getPatient } from '../../services/patientService.js';
-import { listVisits, createVisit } from '../../services/visitService.js';
+import { listVisits, createVisit, updateVisit } from '../../services/visitService.js';
+import { listPrescriptions, createPrescription } from '../../services/doctorService.js';
 import { listHistory, createHistoryEntry } from '../../services/medicalHistoryService.js';
 import { listAttachments, uploadAttachment, downloadAttachment } from '../../services/attachmentService.js';
 import { listLabRequests, createLabRequest, updateLabRequestStatus, recordLabResult, getLabResult } from '../../services/labService.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import AppShell from '../Layout/AppShell.jsx';
+import { STATUS_LABELS, VISIT_STATUSES } from '../Doctor/visitStatus.js';
 import styles from './PatientDetailPage.module.css';
 
 const VISIT_TYPES = ['OUTPATIENT', 'INPATIENT', 'EMERGENCY', 'FOLLOW_UP'];
@@ -21,12 +23,14 @@ export default function PatientDetailPage() {
   const canWrite = user && CAN_WRITE_CLINICAL.includes(user.role);
   const canRecordLab = user && CAN_RECORD_LAB_RESULTS.includes(user.role);
   const isPatient = user && user.role === 'PATIENT';
+  const isDoctor = user && user.role === 'DOCTOR';
 
   const [patient, setPatient] = useState(null);
   const [visits, setVisits] = useState([]);
   const [history, setHistory] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [labRequests, setLabRequests] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
   const [error, setError] = useState('');
 
   function loadAll() {
@@ -35,6 +39,7 @@ export default function PatientDetailPage() {
     listHistory(id).then(setHistory).catch(() => {});
     listAttachments(id).then(setAttachments).catch(() => {});
     listLabRequests(id).then(setLabRequests).catch(() => {});
+    listPrescriptions(id).then(setPrescriptions).catch(() => {});
   }
 
   useEffect(loadAll, [id]);
@@ -59,7 +64,8 @@ export default function PatientDetailPage() {
           </div>
         )}
 
-        <VisitsSection patientId={id} visits={visits} canWrite={canWrite} onChanged={loadAll} />
+        <VisitsSection patientId={id} visits={visits} canWrite={canWrite} isDoctor={isDoctor} onChanged={loadAll} />
+        <PrescriptionsSection visits={visits} prescriptions={prescriptions} />
         <LabRequestsSection patientId={id} visits={visits} labRequests={labRequests} canRequest={canWrite} canRecord={canRecordLab} onChanged={loadAll} />
         <MedicalHistorySection patientId={id} history={history} canWrite={canWrite} onChanged={loadAll} />
         <AttachmentsSection patientId={id} attachments={attachments} canWrite={canWrite} onChanged={loadAll} />
@@ -68,7 +74,7 @@ export default function PatientDetailPage() {
   );
 }
 
-function VisitsSection({ patientId, visits, canWrite, onChanged }) {
+function VisitsSection({ patientId, visits, canWrite, isDoctor, onChanged }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ visitDate: '', visitType: 'OUTPATIENT', reason: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -104,14 +110,7 @@ function VisitsSection({ patientId, visits, canWrite, onChanged }) {
 
       <ul className={styles.list}>
         {visits.map((v) => (
-          <li key={v.id} className={styles.item}>
-            <div className={styles.itemTop}>
-              <span>{v.reason}</span>
-              <span className={styles.itemTag}>{v.visitType.replace('_', ' ')}</span>
-            </div>
-            <div className={styles.itemMeta}>{new Date(v.visitDate).toLocaleString()}</div>
-            {v.notes && <div className={styles.itemBody}>{v.notes}</div>}
-          </li>
+          <VisitRow key={v.id} patientId={patientId} visit={v} isDoctor={isDoctor} onChanged={onChanged} />
         ))}
         {visits.length === 0 && <li className={styles.empty}>No visits recorded yet.</li>}
       </ul>
@@ -146,6 +145,183 @@ function VisitsSection({ patientId, visits, canWrite, onChanged }) {
           </div>
         </form>
       )}
+    </section>
+  );
+}
+
+const EMPTY_RX = { medicationName: '', dosage: '', frequency: '', durationDays: '', instructions: '' };
+
+function VisitRow({ patientId, visit, isDoctor, onChanged }) {
+  const [mode, setMode] = useState(null); // null | 'edit' | 'prescribe'
+  const [edit, setEdit] = useState({ status: visit.status, diagnosisCode: '', notes: '' });
+  const [rx, setRx] = useState(EMPTY_RX);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  function open(next) {
+    setError('');
+    if (next === 'edit') {
+      setEdit({ status: visit.status, diagnosisCode: visit.diagnosisCode ?? '', notes: visit.notes ?? '' });
+    }
+    setMode(next);
+  }
+
+  async function submit(e, action, failMessage) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    try {
+      await action();
+      setMode(null);
+      setRx(EMPTY_RX);
+      onChanged();
+    } catch (err) {
+      setError(err.response?.data?.message || failMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // The API treats null fields as "leave unchanged", so only send what the doctor edited.
+  const handleEdit = (e) => submit(e, () => {
+    const payload = {};
+    if (edit.status !== visit.status) payload.status = edit.status;
+    if (edit.diagnosisCode.trim() !== (visit.diagnosisCode ?? '')) payload.diagnosisCode = edit.diagnosisCode.trim();
+    if (edit.notes !== (visit.notes ?? '')) payload.notes = edit.notes;
+    return updateVisit(patientId, visit.id, payload);
+  }, 'Failed to update visit');
+
+  const handlePrescribe = (e) => submit(e, () => createPrescription(patientId, visit.id, {
+    medicationName: rx.medicationName,
+    dosage: rx.dosage,
+    frequency: rx.frequency,
+    durationDays: rx.durationDays ? Number(rx.durationDays) : null,
+    instructions: rx.instructions || null,
+  }), 'Failed to issue prescription');
+
+  return (
+    <li className={styles.item}>
+      <div className={styles.itemTop}>
+        <span>{visit.reason}</span>
+        <span className={styles.tagGroup}>
+          {visit.status && <span className={styles.itemTagMuted}>{STATUS_LABELS[visit.status] ?? visit.status}</span>}
+          <span className={styles.itemTag}>{visit.visitType.replace('_', ' ')}</span>
+        </span>
+      </div>
+      <div className={styles.itemMeta}>
+        {new Date(visit.visitDate).toLocaleString()}
+        {visit.diagnosisCode && <> · Diagnosis <code>{visit.diagnosisCode}</code></>}
+      </div>
+      {visit.notes && <div className={styles.itemBody}>{visit.notes}</div>}
+
+      {isDoctor && mode === null && (
+        <div className={styles.rowActions}>
+          <button type="button" className={styles.btnSecondary} onClick={() => open('edit')}>Update visit</button>
+          {visit.status !== 'CANCELLED' && (
+            <button type="button" className={styles.btnSecondary} onClick={() => open('prescribe')}>+ Prescribe</button>
+          )}
+        </div>
+      )}
+
+      {mode === 'edit' && (
+        <form className={styles.inlineForm} onSubmit={handleEdit}>
+          <div className={styles.formGrid}>
+            <div className="field">
+              <label htmlFor={`status-${visit.id}`}>Status</label>
+              <select id={`status-${visit.id}`} value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value })}>
+                {VISIT_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor={`dx-${visit.id}`}>Diagnosis code</label>
+              <input id={`dx-${visit.id}`} placeholder="e.g. J06.9" value={edit.diagnosisCode}
+                onChange={(e) => setEdit({ ...edit, diagnosisCode: e.target.value })} />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor={`notes-${visit.id}`}>Clinical notes</label>
+            <textarea id={`notes-${visit.id}`} rows={3} value={edit.notes}
+              onChange={(e) => setEdit({ ...edit, notes: e.target.value })} />
+          </div>
+          {error && <p className="error">{error}</p>}
+          <div className={styles.formActions}>
+            <button type="button" className={styles.btnSecondary} onClick={() => setMode(null)}>Cancel</button>
+            <button type="submit" disabled={submitting}>{submitting ? 'Saving…' : 'Save changes'}</button>
+          </div>
+        </form>
+      )}
+
+      {mode === 'prescribe' && (
+        <form className={styles.inlineForm} onSubmit={handlePrescribe}>
+          <div className={styles.formGrid}>
+            <div className="field">
+              <label htmlFor={`med-${visit.id}`}>Medication</label>
+              <input id={`med-${visit.id}`} required value={rx.medicationName}
+                onChange={(e) => setRx({ ...rx, medicationName: e.target.value })} />
+            </div>
+            <div className="field">
+              <label htmlFor={`dose-${visit.id}`}>Dosage</label>
+              <input id={`dose-${visit.id}`} required placeholder="500 mg" value={rx.dosage}
+                onChange={(e) => setRx({ ...rx, dosage: e.target.value })} />
+            </div>
+            <div className="field">
+              <label htmlFor={`freq-${visit.id}`}>Frequency</label>
+              <input id={`freq-${visit.id}`} required placeholder="Twice daily" value={rx.frequency}
+                onChange={(e) => setRx({ ...rx, frequency: e.target.value })} />
+            </div>
+            <div className="field">
+              <label htmlFor={`days-${visit.id}`}>Duration (days)</label>
+              <input id={`days-${visit.id}`} type="number" min="1" value={rx.durationDays}
+                onChange={(e) => setRx({ ...rx, durationDays: e.target.value })} />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor={`instr-${visit.id}`}>Instructions</label>
+            <input id={`instr-${visit.id}`} placeholder="Take with food" value={rx.instructions}
+              onChange={(e) => setRx({ ...rx, instructions: e.target.value })} />
+          </div>
+          {error && <p className="error">{error}</p>}
+          <div className={styles.formActions}>
+            <button type="button" className={styles.btnSecondary} onClick={() => setMode(null)}>Cancel</button>
+            <button type="submit" disabled={submitting}>{submitting ? 'Saving…' : 'Issue prescription'}</button>
+          </div>
+        </form>
+      )}
+    </li>
+  );
+}
+
+const RX_STATUS_LABELS = { ACTIVE: 'Active', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
+
+function PrescriptionsSection({ visits, prescriptions }) {
+  const visitById = Object.fromEntries(visits.map((v) => [v.id, v]));
+
+  return (
+    <section className={styles.section}>
+      <div className={styles.sectionHead}>
+        <h2>Prescriptions</h2>
+      </div>
+      <ul className={styles.list}>
+        {prescriptions.map((p) => {
+          const visit = visitById[p.visitId];
+          return (
+            <li key={p.id} className={styles.item}>
+              <div className={styles.itemTop}>
+                <span>{p.medicationName} · {p.dosage}</span>
+                <span className={styles.itemTag}>{RX_STATUS_LABELS[p.status] ?? p.status}</span>
+              </div>
+              <div className={styles.itemMeta}>
+                {p.frequency}
+                {p.durationDays ? ` for ${p.durationDays} days` : ''}
+                {' · '}issued {new Date(p.createdAt).toLocaleDateString()}
+                {visit && ` · visit: ${visit.reason}`}
+              </div>
+              {p.instructions && <div className={styles.itemBody}>{p.instructions}</div>}
+            </li>
+          );
+        })}
+        {prescriptions.length === 0 && <li className={styles.empty}>No prescriptions issued yet.</li>}
+      </ul>
     </section>
   );
 }
