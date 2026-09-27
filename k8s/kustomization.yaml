@@ -18,6 +18,6 @@ resources:
   - postgres-backup.yaml
 images:
   - name: ghcr.io/mugabo-art/enterprise-healthcare-platform/backend
-    newTag: 36d08ef82ae8c47c408d4d38d1fe33c1f8300ad0
+    newTag: 78c71d3e7973309d928106d232a1441627398398
   - name: ghcr.io/mugabo-art/enterprise-healthcare-platform/frontend
-    newTag: 36d08ef82ae8c47c408d4d38d1fe33c1f8300ad0
+    newTag: 78c71d3e7973309d928106d232a1441627398398
