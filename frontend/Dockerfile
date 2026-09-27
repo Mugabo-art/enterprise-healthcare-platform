@@ -8,6 +8,7 @@ RUN npm run build
 
 # --- Runtime stage: static files served by unprivileged nginx (non-root, listens on 8080) ---
 FROM nginxinc/nginx-unprivileged:1.27-alpine
+LABEL org.opencontainers.image.source="https://github.com/Mugabo-art/enterprise-healthcare-platform"
 # Pull in Alpine security patches that landed after the base image was published (e.g. OpenSSL CVEs).
 USER root
 RUN apk upgrade --no-cache

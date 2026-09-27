@@ -71,7 +71,7 @@ export default function AppShell({ children }) {
   if (!isPatientRole) {
     navItems.push({ label: 'Patients', icon: icons.users, to: '/dashboard#patients-list', active: onPatientDetail });
   }
-  if (user?.role === 'DOCTOR') {
+  if (user?.role === 'DOCTOR' || user?.role === 'ADMIN') {
     navItems.push({ label: 'Schedule', icon: icons.calendar, to: '/dashboard/schedule', active: location.pathname === '/dashboard/schedule' });
   }
   if (user?.role === 'PHARMACIST' || user?.role === 'ADMIN') {

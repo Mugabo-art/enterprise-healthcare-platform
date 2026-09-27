@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getSchedule } from '../../services/doctorService.js';
+import { Link, useSearchParams } from 'react-router-dom';
+import { getSchedule, listDoctors } from '../../services/doctorService.js';
 import { getPatient } from '../../services/patientService.js';
 import { updateVisit } from '../../services/visitService.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -34,16 +34,41 @@ export function filterByView(visits, view, now = new Date()) {
 
 export default function SchedulePage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [doctors, setDoctors] = useState([]);
   const [visits, setVisits] = useState([]);
   const [patients, setPatients] = useState({});
   const [view, setView] = useState('today');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  function load() {
-    if (!user) return;
-    getSchedule(user.id)
+  // A doctor always sees their own schedule; an admin picks whose (kept in ?doctor= so it can be linked).
+  const doctorId = isAdmin ? searchParams.get('doctor') || doctors[0]?.id : user?.id;
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    listDoctors()
       .then((data) => {
+        setDoctors(data);
+        if (data.length === 0) setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load doctors');
+        setLoading(false);
+      });
+  }, [isAdmin]);
+
+  function load() {
+    if (!doctorId) return undefined;
+    // Ignore a slow response for a doctor the admin has already switched away from.
+    let stale = false;
+    setLoading(true);
+    setError('');
+    setVisits([]);
+    getSchedule(doctorId)
+      .then((data) => {
+        if (stale) return;
         setVisits(data);
         // The schedule only carries patient ids; resolve each distinct one once for display.
         const ids = [...new Set(data.map((v) => v.patientId))];
@@ -53,11 +78,14 @@ export default function SchedulePage() {
             .catch(() => {});
         });
       })
-      .catch(() => setError('Failed to load schedule'))
-      .finally(() => setLoading(false));
+      .catch(() => !stale && setError('Failed to load schedule'))
+      .finally(() => !stale && setLoading(false));
+    return () => {
+      stale = true;
+    };
   }
 
-  useEffect(load, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- reload only when the signed-in doctor changes
+  useEffect(load, [doctorId]); // reload only when the viewed doctor changes
 
   async function handleStatus(visit, status) {
     setError('');
@@ -78,7 +106,18 @@ export default function SchedulePage() {
       <div className={styles.content}>
         <div className={styles.header}>
           <div>
-            <h1>My schedule</h1>
+            <h1>{isAdmin ? 'Doctor schedules' : 'My schedule'}</h1>
+            {isAdmin && doctors.length > 0 && (
+              <select
+                aria-label="Doctor"
+                className={styles.doctorSelect}
+                value={doctorId ?? ''}
+                onChange={(e) => setSearchParams({ doctor: e.target.value })}
+              >
+                {doctors.map((d) => <option key={d.id} value={d.id}>{d.email}</option>)}
+              </select>
+            )}
+            {isAdmin && !loading && doctors.length === 0 && <p className={styles.subtitle}>No doctor accounts yet.</p>}
             <p className={styles.subtitle}>
               {todayCount === 0
                 ? 'No visits today.'
@@ -106,7 +145,7 @@ export default function SchedulePage() {
         <section className={styles.section}>
           <ul className={styles.list}>
             {shown.map((v) => (
-              <ScheduleRow key={v.id} visit={v} patient={patients[v.patientId]} showDate={view !== 'today'} onStatus={handleStatus} />
+              <ScheduleRow key={v.id} visit={v} patient={patients[v.patientId]} showDate={view !== 'today'} onStatus={isAdmin ? null : handleStatus} />
             ))}
             {!loading && shown.length === 0 && <li className={styles.empty}>Nothing scheduled here.</li>}
           </ul>
@@ -118,7 +157,8 @@ export default function SchedulePage() {
 
 function ScheduleRow({ visit, patient, showDate, onStatus }) {
   const when = new Date(visit.visitDate);
-  const actions = NEXT_STATUS_ACTIONS[visit.status] ?? [];
+  // Visit updates are DOCTOR-only on the API, so read-only viewers (admins) get no actions.
+  const actions = onStatus ? NEXT_STATUS_ACTIONS[visit.status] ?? [] : [];
   const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'Loading patient…';
 
   return (

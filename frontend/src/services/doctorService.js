@@ -1,5 +1,10 @@
 import apiClient from './apiClient.js';
 
+export async function listDoctors() {
+  const { data } = await apiClient.get('/doctors');
+  return data;
+}
+
 export async function getSchedule(doctorId) {
   const { data } = await apiClient.get(`/doctors/${doctorId}/visits`);
   return data;

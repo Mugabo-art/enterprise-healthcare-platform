@@ -2,7 +2,9 @@ package com.healthplatform.doctor.controller;
 
 import com.healthplatform.auth.model.Role;
 import com.healthplatform.auth.model.User;
+import com.healthplatform.auth.service.UserDirectoryService;
 import com.healthplatform.common.exception.ApiException;
+import com.healthplatform.doctor.dto.DoctorSummary;
 import com.healthplatform.visit.dto.VisitResponse;
 import com.healthplatform.visit.service.VisitService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,13 +24,25 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/doctors")
-@Tag(name = "Doctors", description = "Doctor schedule")
+@Tag(name = "Doctors", description = "Doctor directory and schedules")
 public class DoctorController {
 
     private final VisitService visitService;
+    private final UserDirectoryService userDirectoryService;
 
-    public DoctorController(VisitService visitService) {
+    public DoctorController(VisitService visitService, UserDirectoryService userDirectoryService) {
         this.visitService = visitService;
+        this.userDirectoryService = userDirectoryService;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List doctor accounts, e.g. to pick whose schedule to view")
+    public ResponseEntity<List<DoctorSummary>> list() {
+        return ResponseEntity.ok(userDirectoryService.listByRole(Role.DOCTOR)
+                .stream()
+                .map(DoctorSummary::from)
+                .toList());
     }
 
     @GetMapping("/{doctorId}/visits")

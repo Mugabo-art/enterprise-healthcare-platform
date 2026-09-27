@@ -8,6 +8,7 @@ RUN mvn -q clean package -DskipTests
 
 # --- Runtime stage ---
 FROM eclipse-temurin:21-jre-alpine
+LABEL org.opencontainers.image.source="https://github.com/Mugabo-art/enterprise-healthcare-platform"
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar

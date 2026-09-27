@@ -2,14 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SchedulePage, { filterByView } from '../SchedulePage.jsx';
-import { getSchedule } from '../../../services/doctorService.js';
+import { getSchedule, listDoctors } from '../../../services/doctorService.js';
 import { updateVisit } from '../../../services/visitService.js';
 
-const mockAuth = { user: { id: 'doc-1', email: 'doc@hospital.test', role: 'DOCTOR' }, logout: vi.fn() };
+const DOCTOR_USER = { id: 'doc-1', email: 'doc@hospital.test', role: 'DOCTOR' };
+const mockAuth = { user: DOCTOR_USER, logout: vi.fn() };
 vi.mock('../../../context/AuthContext.jsx', () => ({
   useAuth: () => mockAuth,
 }));
-vi.mock('../../../services/doctorService.js', () => ({ getSchedule: vi.fn() }));
+vi.mock('../../../services/doctorService.js', () => ({ getSchedule: vi.fn(), listDoctors: vi.fn() }));
 vi.mock('../../../services/patientService.js', () => ({
   getPatient: vi.fn(() => Promise.resolve({ id: 'p1', firstName: 'Ada', lastName: 'Lovelace' })),
 }));
@@ -45,6 +46,7 @@ describe('filterByView', () => {
 describe('SchedulePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuth.user = DOCTOR_USER;
   });
 
   it("loads the signed-in doctor's schedule and resolves patient names", async () => {
@@ -65,5 +67,22 @@ describe('SchedulePage', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Complete' })).toBeInTheDocument());
     expect(updateVisit).toHaveBeenCalledWith('p1', 'v1', { status: 'IN_PROGRESS' });
+  });
+
+  it('lets an admin pick a doctor and view their schedule read-only', async () => {
+    mockAuth.user = { id: 'admin-1', email: 'admin@hospital.test', role: 'ADMIN' };
+    listDoctors.mockResolvedValue([
+      { id: 'doc-a', email: 'a@hospital.test' },
+      { id: 'doc-b', email: 'b@hospital.test' },
+    ]);
+    getSchedule.mockResolvedValue([visit('v1', new Date())]);
+    render(<MemoryRouter><SchedulePage /></MemoryRouter>);
+
+    expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
+    expect(getSchedule).toHaveBeenCalledWith('doc-a');
+    expect(screen.queryByRole('button', { name: 'Start' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Doctor'), { target: { value: 'doc-b' } });
+    await waitFor(() => expect(getSchedule).toHaveBeenCalledWith('doc-b'));
   });
 });
